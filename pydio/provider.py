@@ -10,11 +10,20 @@ class _Instance(IInstance):
         self._target = func()
         self._cached_target = None
 
-    @property
-    def target(self):
+    def get(self):
         if inspect.iscoroutine(self._target):
             return self.__wrap_coroutine_target()
-        return self._target
+        elif inspect.isgenerator(self._target):
+            return self.__wrap_generator_target()
+        else:
+            return self._target
+
+    def __wrap_generator_target(self):
+        if self._cached_target is not None:
+            return self._cached_target
+        value = next(self._target)
+        self._cached_target = value
+        return value
 
     async def __wrap_coroutine_target(self):
         if self._cached_target is not None:
@@ -24,7 +33,11 @@ class _Instance(IInstance):
         return result
 
     def invalidate(self):
-        pass
+        if inspect.isgenerator(self._target):
+            try:
+                next(self._target)
+            except StopIteration:
+                pass
 
     def is_valid(self):
         return True

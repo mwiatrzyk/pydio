@@ -2,7 +2,15 @@ import abc
 
 
 class IDatabase(abc.ABC):
-    pass
+
+    class IConnection(abc.ABC):
+        @abc.abstractmethod
+        def close(self):
+            pass
+
+    @abc.abstractmethod
+    def connect(self) -> IConnection:
+        pass
 
 
 class IAction(abc.ABC):
@@ -10,7 +18,20 @@ class IAction(abc.ABC):
 
 
 class SQLiteDatabase(IDatabase):
-    pass
+
+    def connect(self):
+        pass
+
+
+class PostgresDatabase(IDatabase):
+
+    class Connection(IDatabase.IConnection):
+
+        def close(self):
+            pass
+
+    def connect(self):
+        return self.Connection()
 
 
 class DummyAction(IAction):

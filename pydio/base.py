@@ -7,7 +7,38 @@ from . import exc
 T, U = TypeVar('T'), TypeVar('U')
 
 
+class IInstance(abc.ABC):
+    """Provides API to manipulate instances created by :class:`IInjector`.
+
+    Instances of this class are created by :class:`IUnboundInstance`
+    subclasses.
+    """
+
+    @abc.abstractmethod
+    def get(self) -> Union[T, U]:
+        """Get wrapped object.
+
+        This should always return same instance.
+        """
+
+    @abc.abstractmethod
+    def is_valid(self) -> bool:
+        """Check if object returned by :meth:`get` is valid and can still be
+        used."""
+
+    @abc.abstractmethod
+    def invalidate(self):
+        """Invalidate object returned by :meth:`get`.
+
+        Invalidation may trigger resource clearing, connection shutdown
+        etc. - depending on what was implemented in provider. Please note
+        that invalidation is only meaningful for generator-based providers;
+        in other cases this will do nothing.
+        """
+
+
 class IInjector(abc.ABC):
+    """Provides injector API."""
 
     class NoProviderFound(exc.Base):
         message_template = "No provider found for key: {self.key!r}"
@@ -22,30 +53,46 @@ class IInjector(abc.ABC):
 
     @abc.abstractmethod
     def inject(self, key):
-        pass
+        """Injects instance for given ``key``.
 
+        If no provider specified for ``key``, this will raise
+        :exc:`IInjector.NoProviderFound` exception. Otherwise it will either
+        return matching instance from cache (if exists) or create the
+        instance, fill cache with it and return it. Each injector instance
+        will always inject same object for given ``key``.
 
-class IInstance(abc.ABC):
+        :param key:
+            Key pointing to instance to be injected.
 
-    @property
+            This can be any hashable object, however it will usually be some
+            kind of interface.
+        """
+
     @abc.abstractmethod
-    def target(self) -> Union[T, U]:
-        pass
+    def close(self):
+        """Closes this injector.
 
-    @abc.abstractmethod
-    def is_valid(self) -> bool:
-        pass
-
-    @abc.abstractmethod
-    def invalidate(self):
-        pass
+        Behind the scenes, this method will perform cleanup actions on all
+        instances created by this injector. This effectively makes
+        :meth:`inject` to be unusable for this injector.
+        """
 
 
 class IUnboundInstance(abc.ABC):
+    """Provides API for creating :class:`IInstance` objects.
+
+    Unbound instances are created and managed by :class:`IProvider`
+    subclasses.
+    """
 
     @abc.abstractmethod
     def bind(self, injector: IInjector) -> IInstance:
-        pass
+        """Binds this unbound instance with given params.
+
+        :param injector:
+            Instance of :class:`IInjector` to be bound with produced
+            :class:`IInstance` object
+        """
 
 
 class IProvider(abc.ABC):

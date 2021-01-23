@@ -9,10 +9,14 @@ class Injector(IInjector):
 
     def inject(self, key):
         if key in self._cache:
-            return self._cache[key].target
+            return self._cache[key].get()
         unbound_instance = self._provider.get(key)
         if unbound_instance is None:
             raise self.NoProviderFound(key=key)
         instance = unbound_instance.bind(self)
         self._cache[key] = instance
-        return instance.target
+        return instance.get()
+
+    def close(self):
+        for instance in self._cache.values():
+            instance.invalidate()
