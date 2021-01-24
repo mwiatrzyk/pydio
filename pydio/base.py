@@ -110,5 +110,5 @@ class IProvider(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def provides(self, key: Hashable) -> Callable:
+    def register_func(self, key: Hashable, func: Callable, scope: Hashable=None):
         pass

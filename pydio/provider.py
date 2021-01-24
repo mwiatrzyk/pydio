@@ -60,10 +60,13 @@ class Provider(IProvider):
     def get(self, key):
         return self._factory_funcs.get(key)
 
-    def provides(self, key):
+    def register_func(self, key, func, scope=None):
+        self._factory_funcs[key] = _UnboundInstance(func)
+
+    def provides(self, key, **kwargs):
 
         def decorator(func):
-            self._factory_funcs[key] = _UnboundInstance(func)
+            self.register_func(key, func, **kwargs)
             return func
 
         return decorator

@@ -46,7 +46,5 @@ def test_injector_should_inject_same_instances(injector, connection):
 
 def test_when_injector_is_closed_then_underlying_provider_is_closed_as_well(injector, connection):
     injector.inject(IDatabase)
-
     connection.close.expect_call().times(1)
-
     injector.close()
