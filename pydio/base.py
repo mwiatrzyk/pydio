@@ -43,6 +43,12 @@ class IInjector(abc.ABC):
     class NoProviderFound(exc.Base):
         message_template = "No provider found for key: {self.key!r}"
 
+    class AlreadyClosed(exc.Base):
+        message_template = "Injector was already closed"
+
+    class OutOfScope(exc.Base):
+        message_template = "Cannot inject {self.key!r} due to scope mismatch: {self.expected_scope!r} (expected) != {self.given_scope} (given)"
+
     @overload
     def inject(self, key: Type[T]) -> T:
         pass
@@ -67,6 +73,10 @@ class IInjector(abc.ABC):
             This can be any hashable object, however it will usually be some
             kind of interface.
         """
+
+    @abc.abstractmethod
+    def scoped(self, scope: Hashable) -> 'IInjector':
+        """Create scoped injector from this injector."""
 
     @abc.abstractmethod
     def close(self):
@@ -98,15 +108,15 @@ class IUnboundInstance(abc.ABC):
 class IProvider(abc.ABC):
 
     @overload
-    def get(self, key: Type[T]) -> IUnboundInstance:
+    def get(self, key: Type[T], scope: Hashable=None) -> IUnboundInstance:
         pass
 
     @overload
-    def get(self, key: Hashable) -> IUnboundInstance:
+    def get(self, key: Hashable, scope: Hashable=None) -> IUnboundInstance:
         pass
 
     @abc.abstractmethod
-    def get(self, key):
+    def get(self, key, scope=None):
         pass
 
     @abc.abstractmethod

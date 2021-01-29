@@ -12,12 +12,12 @@ provider = Provider()
 
 
 @provider.provides('database')
-def make_database(_):
+def make_database(*args):
     return Mock('database')
 
 
 @provider.provides(IDatabase)
-def make_database_connection(injector: Injector):
+def make_database_connection(injector: Injector, *args):
     db = injector.inject('database')
     connection = db.connect()
     yield connection

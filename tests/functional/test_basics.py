@@ -8,12 +8,12 @@ provider = Provider()
 
 
 @provider.provides(IDatabase)
-def make_database(_):
+def make_database(*args):
     return SQLiteDatabase()
 
 
 @provider.provides(IAction)
-def make_action(injector: Injector):
+def make_action(injector: Injector, *args):
     return DummyAction(
         injector.inject(IDatabase))
 

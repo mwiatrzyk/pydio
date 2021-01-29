@@ -45,11 +45,17 @@ class _Instance(IInstance):
 
 class _UnboundInstance(IUnboundInstance):
 
-    def __init__(self, func):
+    def __init__(self, key, func, scope=None):
+        self._key = key
         self._func = func
+        self._scope = scope
+
+    @property
+    def scope(self):
+        return self._scope
 
     def bind(self, injector):
-        return _Instance(functools.partial(self._func, injector))
+        return _Instance(functools.partial(self._func, injector, self._key))
 
 
 class Provider(IProvider):
@@ -60,8 +66,12 @@ class Provider(IProvider):
     def get(self, key):
         return self._factory_funcs.get(key)
 
+    def attach(self, provider: 'Provider'):
+        for k, v in provider._factory_funcs.items():
+            self._factory_funcs[k] = v
+
     def register_func(self, key, func, scope=None):
-        self._factory_funcs[key] = _UnboundInstance(func)
+        self._factory_funcs[key] = _UnboundInstance(key, func, scope=scope)
 
     def provides(self, key, **kwargs):
 
