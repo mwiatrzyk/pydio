@@ -3,32 +3,22 @@ import contextlib
 
 from typing import Hashable, Callable, Type, TypeVar, Union, Any, overload
 
-from . import exc
+from . import exc, _utils
 
 T, U = TypeVar('T'), TypeVar('U')
-
-
-class InjectorError(exc.Base):
-    pass
-
-
-class ProviderError(exc.Base):
-    pass
+NULL = _utils.Constant('NULL')
 
 
 class IInjector(contextlib.AbstractContextManager):
 
-    class NoProviderFoundError(InjectorError):
+    class NoProviderFoundError(exc.InjectorError):
         message_template = "No provider found for key: {self.key!r}"
 
         @property
         def key(self) -> Hashable:
             return self.args['key']
 
-    class AlreadyClosedError(InjectorError):
-        message_template = "Injector was already closed"
-
-    class OutOfScopeError(InjectorError):
+    class OutOfScopeError(exc.InjectorError):
         message_template = "Cannot inject {self.key!r} due to scope mismatch: {self.expected_scope!r} (expected) != {self.given_scope} (given)"
 
         @property
@@ -72,7 +62,7 @@ class IFactory(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_instance(self) -> Union[T, U]:
+    def get_instance(self) -> Union[T, U]:  # TODO: Union[T, U, NULL] (fails on NULL currently)
         pass
 
     @abc.abstractmethod
@@ -98,7 +88,7 @@ class IUnboundFactory(abc.ABC):
 
 class IProvider(abc.ABC):
 
-    class DoubleRegistrationError(ProviderError):
+    class DoubleRegistrationError(exc.ProviderError):
         message_template = "This key is already in use: {self.key!r}"
 
         @property

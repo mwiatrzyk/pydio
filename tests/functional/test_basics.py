@@ -2,6 +2,7 @@ from typing import Hashable
 
 import pytest
 
+from pydio import exc
 from pydio.api import Provider, Injector
 
 from tests.stubs import IFoo, IBar, Foo, Bar, Baz
@@ -54,5 +55,5 @@ def test_injector_can_perform_nested_injections_if_needed(injector):
 
 def test_injector_can_no_longer_be_used_after_close(injector):
     injector.close()
-    with pytest.raises(Injector.AlreadyClosedError):
+    with pytest.raises(exc.AlreadyClosedError):
         injector.inject(IFoo)

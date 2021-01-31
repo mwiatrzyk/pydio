@@ -1,6 +1,7 @@
 import weakref
 import functools
 
+from . import exc
 from .base import IProvider, IInjector
 
 
@@ -27,7 +28,7 @@ class Injector(IInjector):
 
     def inject(self, key):
         if self._provider is None:
-            raise self.AlreadyClosedError()
+            raise exc.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
         unbound_instance = self._provider.get(key)

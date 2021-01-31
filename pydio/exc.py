@@ -31,3 +31,15 @@ class Base(Exception, abc.ABC):
         """Key-value pairs containing named parameters this exception was
         created with."""
         return self._args
+
+
+class AlreadyClosedError(Base):
+    message_template = "Underlying factory was already closed"
+
+
+class InjectorError(Base):
+    pass
+
+
+class ProviderError(Base):
+    pass

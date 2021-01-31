@@ -1,37 +1,41 @@
 import functools
 
-from .base import IUnboundFactory, IFactory
+from . import exc, _utils
+from .base import IUnboundFactory, IFactory, NULL
 
-_NOT_SET = object()
+_UNDEFINED = _utils.Constant('_UNDEFINED')
 
 
 class GeneratorFactory(IFactory):
 
     def __init__(self, func):
         self._generator = func()
-        self._instance = _NOT_SET
+        self._instance = _UNDEFINED
 
     @staticmethod
     def is_awaitable():
         return False
 
     def get_instance(self):
-        if self._instance is _NOT_SET:
+        if self._instance is _UNDEFINED:
             self._instance = next(self._generator)
         return self._instance
 
     def close(self):
-        try:
-            next(self._generator)
-        except StopIteration:
-            pass
+        prev_instance = self._instance
+        self._instance = NULL
+        if prev_instance is not _UNDEFINED:
+            try:
+                next(self._generator)
+            except StopIteration:
+                pass
 
 
 class AsyncGeneratorFactory(IFactory):
 
     def __init__(self, func):
         self._generator = func()
-        self._instance = _NOT_SET
+        self._instance = _UNDEFINED
 
     @staticmethod
     def is_awaitable():
@@ -39,7 +43,7 @@ class AsyncGeneratorFactory(IFactory):
 
     def get_instance(self):
         async def async_get_instance():
-            if self._instance is _NOT_SET:
+            if self._instance is _UNDEFINED:
                 self._instance = await self._generator.__anext__()
             return self._instance
         return async_get_instance()
@@ -57,7 +61,7 @@ class CoroutineFactory(IFactory):
 
     def __init__(self, func):
         self._awaitable = func()
-        self._instance = _NOT_SET
+        self._instance = _UNDEFINED
 
     @staticmethod
     def is_awaitable():
@@ -65,7 +69,7 @@ class CoroutineFactory(IFactory):
 
     def get_instance(self):
         async def async_get_instance():
-            if self._instance is _NOT_SET:
+            if self._instance is _UNDEFINED:
                 self._instance = await self._awaitable
             return self._instance
         return async_get_instance()
