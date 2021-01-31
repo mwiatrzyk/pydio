@@ -1,7 +1,7 @@
 import abc
 import contextlib
 
-from typing import Hashable, Callable, Type, TypeVar, Union, overload
+from typing import Hashable, Callable, Type, TypeVar, Union, Any, overload
 
 from . import exc
 
@@ -102,7 +102,7 @@ class IProvider(abc.ABC):
         message_template = "This key is already in use: {self.key!r}"
 
         @property
-        def key(self):
+        def key(self) -> Hashable:
             return self.args['key']
 
     @overload
@@ -119,4 +119,8 @@ class IProvider(abc.ABC):
 
     @abc.abstractmethod
     def register_func(self, key: Hashable, func: Callable, scope: Hashable=None):
+        pass
+
+    @abc.abstractmethod
+    def register_instance(self, key: Hashable, value: Any, scope: Hashable=None):
         pass

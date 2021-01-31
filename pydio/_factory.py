@@ -90,6 +90,22 @@ class FunctionFactory(IFactory):
         pass
 
 
+class InstanceFactory(IFactory):
+
+    def __init__(self, value):
+        self._value = value
+
+    @staticmethod
+    def is_awaitable():
+        return False
+
+    def get_instance(self):
+        return self._value
+
+    def close(self):
+        pass
+
+
 class GenericUnboundFactory(IUnboundFactory):
 
     def __init__(self, factory_class, key, func, scope=None):
@@ -107,3 +123,20 @@ class GenericUnboundFactory(IUnboundFactory):
 
     def bind(self, injector):
         return self._factory_class(functools.partial(self._func, injector, self._key))
+
+
+class UnboundInstanceFactory(IUnboundFactory):
+
+    def __init__(self, value, scope=None):
+        self._value = value
+        self._scope = scope
+
+    @property
+    def scope(self):
+        return self._scope
+
+    def is_awaitable(self):
+        return False
+
+    def bind(self, *args):
+        return InstanceFactory(self._value)

@@ -11,6 +11,10 @@ class Provider(IProvider):
     def __init__(self):
         self._factory_funcs = {}
 
+    def _check_key_availability(self, key):
+        if key in self._factory_funcs:
+            raise self.DoubleRegistrationError(key=key)
+
     def get(self, key):
         return self._factory_funcs.get(key)
 
@@ -19,14 +23,19 @@ class Provider(IProvider):
 
     def attach(self, provider: 'Provider'):
         for k, v in provider._factory_funcs.items():
+            self._check_key_availability(k)
             self._factory_funcs[k] = v
 
     def register_func(self, key, func, scope=None):
-        if key in self._factory_funcs:
-            raise self.DoubleRegistrationError(key=key)
+        self._check_key_availability(key)
         self._factory_funcs[key] =\
             _factory.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope)
+
+    def register_instance(self, key, value, scope=None):
+        self._check_key_availability(key)
+        self._factory_funcs[key] =\
+            _factory.UnboundInstanceFactory(value, scope=scope)
 
     def __get_factory_class_for(self, func):
         if inspect.isasyncgenfunction(func):
