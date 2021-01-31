@@ -11,13 +11,14 @@ class GeneratorFactory(IFactory):
         self._generator = func()
         self._instance = _NOT_SET
 
+    @staticmethod
+    def is_awaitable():
+        return False
+
     def get_instance(self):
         if self._instance is _NOT_SET:
             self._instance = next(self._generator)
         return self._instance
-
-    def is_awaitable(self):
-        return False
 
     def close(self):
         try:
@@ -32,15 +33,16 @@ class AsyncGeneratorFactory(IFactory):
         self._generator = func()
         self._instance = _NOT_SET
 
+    @staticmethod
+    def is_awaitable():
+        return True
+
     def get_instance(self):
         async def async_get_instance():
             if self._instance is _NOT_SET:
                 self._instance = await self._generator.__anext__()
             return self._instance
         return async_get_instance()
-
-    def is_awaitable(self):
-        return True
 
     def close(self):
         async def async_close():
@@ -57,15 +59,16 @@ class CoroutineFactory(IFactory):
         self._awaitable = func()
         self._instance = _NOT_SET
 
+    @staticmethod
+    def is_awaitable():
+        return True
+
     def get_instance(self):
         async def async_get_instance():
             if self._instance is _NOT_SET:
                 self._instance = await self._awaitable
             return self._instance
         return async_get_instance()
-
-    def is_awaitable(self):
-        return True
 
     def close(self):
         pass
@@ -76,19 +79,21 @@ class FunctionFactory(IFactory):
     def __init__(self, func):
         self._instance = func()
 
+    @staticmethod
+    def is_awaitable():
+        return False
+
     def get_instance(self):
         return self._instance
-
-    def is_awaitable(self):
-        return False
 
     def close(self):
         pass
 
 
-class BaseUnboundFactory(IUnboundFactory):
+class GenericUnboundFactory(IUnboundFactory):
 
-    def __init__(self, key, func, scope=None):
+    def __init__(self, factory_class, key, func, scope=None):
+        self._factory_class = factory_class
         self._key = key
         self._func = func
         self._scope = scope
@@ -97,38 +102,8 @@ class BaseUnboundFactory(IUnboundFactory):
     def scope(self):
         return self._scope
 
-
-class UnboundGeneratorFactory(BaseUnboundFactory):
-
     def is_awaitable(self):
-        return False
+        return self._factory_class.is_awaitable()
 
     def bind(self, injector):
-        return GeneratorFactory(functools.partial(self._func, injector, self._key))
-
-
-class UnboundCoroutineFactory(BaseUnboundFactory):
-
-    def is_awaitable(self):
-        return True
-
-    def bind(self, injector):
-        return CoroutineFactory(functools.partial(self._func, injector, self._key))
-
-
-class UnboundAsyncGeneratorFactory(BaseUnboundFactory):
-
-    def is_awaitable(self):
-        return True
-
-    def bind(self, injector):
-        return AsyncGeneratorFactory(functools.partial(self._func, injector, self._key))
-
-
-class UnboundFunctionFactory(BaseUnboundFactory):
-
-    def is_awaitable(self):
-        return False
-
-    def bind(self, injector):
-        return FunctionFactory(functools.partial(self._func, injector, self._key))
+        return self._factory_class(functools.partial(self._func, injector, self._key))

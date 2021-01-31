@@ -42,8 +42,9 @@ class IInjector(contextlib.AbstractContextManager):
 
 class IFactory(abc.ABC):
 
+    @staticmethod
     @abc.abstractmethod
-    def is_awaitable(self) -> bool:
+    def is_awaitable() -> bool:
         pass
 
     @abc.abstractmethod

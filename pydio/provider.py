@@ -22,14 +22,19 @@ class Provider(IProvider):
             self._factory_funcs[k] = v
 
     def register_func(self, key, func, scope=None):
-        if inspect.isgeneratorfunction(func):
-            self._factory_funcs[key] = _factory.UnboundGeneratorFactory(key, func, scope=scope)
-        elif inspect.isasyncgenfunction(func):
-            self._factory_funcs[key] = _factory.UnboundAsyncGeneratorFactory(key, func, scope=scope)
+        self._factory_funcs[key] =\
+            _factory.GenericUnboundFactory(
+                self.__get_factory_class_for(func), key, func, scope=scope)
+
+    def __get_factory_class_for(self, func):
+        if inspect.isasyncgenfunction(func):
+            return _factory.AsyncGeneratorFactory
         elif inspect.iscoroutinefunction(func):
-            self._factory_funcs[key] = _factory.UnboundCoroutineFactory(key, func, scope=scope)
+            return _factory.CoroutineFactory
+        elif inspect.isgeneratorfunction(func):
+            return _factory.GeneratorFactory
         else:
-            self._factory_funcs[key] = _factory.UnboundFunctionFactory(key, func, scope=scope)
+            return _factory.FunctionFactory
 
     def provides(self, key, **kwargs):
 
