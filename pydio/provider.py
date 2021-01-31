@@ -15,6 +15,8 @@ class _Instance(IInstance):
             return self.__wrap_coroutine_target()
         elif inspect.isgenerator(self._target):
             return self.__wrap_generator_target()
+        elif inspect.isasyncgen(self._target):
+            return self.__wrap_async_generator_target()
         else:
             return self._target
 
@@ -32,15 +34,34 @@ class _Instance(IInstance):
         self._cached_target = result
         return result
 
+    async def __wrap_async_generator_target(self):
+        value = await self._target.__anext__()
+        return value
+
     def invalidate(self):
         if inspect.isgenerator(self._target):
             try:
                 next(self._target)
             except StopIteration:
                 pass
+        elif inspect.isasyncgen(self._target):
+            async def async_invalidate():
+                try:
+                    await self._target.__anext__()
+                except StopAsyncIteration:
+                    pass
+            return async_invalidate()
+        elif inspect.iscoroutine(self._target):
+            async def async_invalidate():
+                pass
+            return async_invalidate()
 
     def is_valid(self):
         return True
+
+    def is_awaitable(self):
+        return inspect.iscoroutine(self._target) or\
+            inspect.isasyncgen(self._target)
 
 
 class _UnboundInstance(IUnboundInstance):
@@ -54,6 +75,10 @@ class _UnboundInstance(IUnboundInstance):
     def scope(self):
         return self._scope
 
+    def is_awaitable(self):
+        return inspect.iscoroutinefunction(self._func) or\
+            inspect.isasyncgenfunction(self._func)
+
     def bind(self, injector):
         return _Instance(functools.partial(self._func, injector, self._key))
 
@@ -65,6 +90,9 @@ class Provider(IProvider):
 
     def get(self, key):
         return self._factory_funcs.get(key)
+
+    def has_awaitables(self):
+        return any(factory.is_awaitable() for factory in self._factory_funcs.values())
 
     def attach(self, provider: 'Provider'):
         for k, v in provider._factory_funcs.items():

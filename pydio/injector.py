@@ -1,5 +1,6 @@
 import weakref
 import functools
+import contextlib
 
 from . import _utils
 from .base import IProvider, IInjector
@@ -7,7 +8,7 @@ from .base import IProvider, IInjector
 _skip_none_kwargs = _utils.KwargsFilter(lambda x: x is None)
 
 
-class Injector(IInjector):
+class Injector(IInjector, contextlib.AbstractContextManager):
 
     def __init__(self, provider: IProvider):
         self._provider = provider
@@ -15,6 +16,9 @@ class Injector(IInjector):
         self._scope = None
         self._children = []
         self.__parent = None
+
+    def __exit__(self, *args):
+        self.close()
 
     @property
     def _parent(self):
@@ -49,8 +53,25 @@ class Injector(IInjector):
         return injector
 
     def close(self):
-        self._provider = None
-        for child in self._children:
-            child.close()
-        for instance in self._cache.values():
-            instance.invalidate()
+
+        def do_close():
+            self._provider = None
+            for child in self._children:
+                child.close()
+            for instance in self._cache.values():
+                instance.invalidate()
+
+        async def do_async_close():
+            self._provider = None
+            for child in self._children:
+                await child.close()
+            for instance in self._cache.values():
+                if instance.is_awaitable():
+                    await instance.invalidate()
+                else:
+                    instance.invalidate()
+
+        if not self._provider.has_awaitables():
+            return do_close()
+        else:
+            return do_async_close()

@@ -54,3 +54,14 @@ def test_when_injector_gets_closed_then_underlying_generator_proceeds_to_cleanup
     teardown.expect_call().times(1)
     with satisfied(teardown):
         injector.close()
+
+
+def test_use_injector_as_context_manager(injector):
+    teardown = injector.inject('teardown')
+    teardown.expect_call()
+    with satisfied(teardown):
+        with injector:
+            startup = injector.inject('startup')
+            startup.expect_call().times(1)
+            with satisfied(startup):
+                first = injector.inject(IFoo)
