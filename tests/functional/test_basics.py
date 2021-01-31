@@ -40,7 +40,7 @@ def test_injector_should_always_inject_same_instance(injector):
 
 
 def test_injector_should_raise_exception_if_invalid_key_was_given(injector):
-    with pytest.raises(Injector.NoProviderFound) as excinfo:
+    with pytest.raises(Injector.NoProviderFoundError) as excinfo:
         injector.inject('dummy')
     assert excinfo.value.key == 'dummy'
 
@@ -54,5 +54,5 @@ def test_injector_can_perform_nested_injections_if_needed(injector):
 
 def test_injector_can_no_longer_be_used_after_close(injector):
     injector.close()
-    with pytest.raises(Injector.AlreadyClosed):
+    with pytest.raises(Injector.AlreadyClosedError):
         injector.inject(IFoo)

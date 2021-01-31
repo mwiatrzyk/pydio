@@ -27,16 +27,16 @@ class Injector(IInjector):
 
     def inject(self, key):
         if self._provider is None:
-            raise self.AlreadyClosed()
+            raise self.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
         unbound_instance = self._provider.get(key)
         if unbound_instance is None:
-            raise self.NoProviderFound(key=key)
+            raise self.NoProviderFoundError(key=key)
         if unbound_instance.scope != self._scope:
             if self._parent is not None:
                 return self._parent.inject(key)
-            raise self.OutOfScope(key=key, expected_scope=unbound_instance.scope, given_scope=self._scope)
+            raise self.OutOfScopeError(key=key, expected_scope=unbound_instance.scope, given_scope=self._scope)
         instance = unbound_instance.bind(self)
         self._cache[key] = instance
         return instance.get_instance()

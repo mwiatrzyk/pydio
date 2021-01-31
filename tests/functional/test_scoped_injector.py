@@ -51,7 +51,7 @@ def injector():
 
 def test_root_injector_cannot_inject_scoped_providers(injector):
     assert isinstance(injector.inject(IFoo), Foo)
-    with pytest.raises(Injector.OutOfScope) as excinfo:
+    with pytest.raises(Injector.OutOfScopeError) as excinfo:
         injector.inject(IBar)
 
 
@@ -69,7 +69,7 @@ def test_scoped_injector_falls_back_to_parent_if_it_cannot_find_provider_with_sa
 
 def test_scoped_injector_cannot_inject_objects_from_side_scope(injector):
     sc1 = injector.scoped('sc1')
-    with pytest.raises(Injector.OutOfScope):
+    with pytest.raises(Injector.OutOfScopeError):
         sc1.inject('baz')
 
 

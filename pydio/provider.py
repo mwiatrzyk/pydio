@@ -22,6 +22,8 @@ class Provider(IProvider):
             self._factory_funcs[k] = v
 
     def register_func(self, key, func, scope=None):
+        if key in self._factory_funcs:
+            raise self.DoubleRegistrationError(key=key)
         self._factory_funcs[key] =\
             _factory.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope)
