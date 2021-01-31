@@ -1,10 +1,7 @@
 import weakref
 import functools
 
-from . import _utils
 from .base import IProvider, IInjector
-
-_skip_none_kwargs = _utils.KwargsFilter(lambda x: x is None)
 
 
 class Injector(IInjector):

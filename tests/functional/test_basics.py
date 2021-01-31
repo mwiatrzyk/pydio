@@ -1,21 +1,29 @@
+from typing import Hashable
+
 import pytest
 
 from pydio.api import Provider, Injector
 
-from tests.stubs import IDatabase, SQLiteDatabase, IAction, DummyAction
+from tests.stubs import IFoo, IBar, Foo, Bar, Baz
 
 provider = Provider()
 
 
-@provider.provides(IDatabase)
-def make_database(*args):
-    return SQLiteDatabase()
+@provider.provides(IFoo)
+def make_foo(*args):
+    return Foo()
 
 
-@provider.provides(IAction)
-def make_action(injector: Injector, *args):
-    return DummyAction(
-        injector.inject(IDatabase))
+@provider.provides(IBar)
+def make_bar(*args):
+    return Bar()
+
+
+@provider.provides('baz')
+def make_baz(injector: Injector, key: Hashable):
+    return Baz(
+        foo=injector.inject(IFoo),
+        bar=injector.inject(IBar))
 
 
 @pytest.fixture
@@ -23,28 +31,28 @@ def injector():
     return Injector(provider)
 
 
-def test_injector_should_inject_provided_instance_when_called(injector):
-    obj = injector.inject(IDatabase)
-    assert isinstance(obj, SQLiteDatabase)
+def test_injector_should_inject_expected_object(injector):
+    assert isinstance(injector.inject(IFoo), Foo)
 
 
-def test_injector_should_always_inject_same_instance_each_time_it_is_called(injector):
-    first = injector.inject(IDatabase)
-    second = injector.inject(IDatabase)
-    assert first is second
+def test_injector_should_always_inject_same_instance(injector):
+    assert injector.inject(IFoo) is injector.inject(IFoo)
 
 
-def test_two_distinct_injectors_will_inject_two_distinct_instances():
-    assert Injector(provider).inject(IDatabase) is not Injector(provider).inject(IDatabase)
-
-
-def test_provider_can_use_injector_for_nested_dependency_injections(injector):
-    action = injector.inject(IAction)
-    assert isinstance(action, DummyAction)
-    assert isinstance(action.database, SQLiteDatabase)
-
-
-def test_injector_should_raise_exception_if_no_provider_was_set_for_given_key(injector):
+def test_injector_should_raise_exception_if_invalid_key_was_given(injector):
     with pytest.raises(Injector.NoProviderFound) as excinfo:
         injector.inject('dummy')
-    assert str(excinfo.value) == "No provider found for key: 'dummy'"
+    assert excinfo.value.key == 'dummy'
+
+
+def test_injector_can_perform_nested_injections_if_needed(injector):
+    baz = injector.inject('baz')
+    assert isinstance(baz, Baz)
+    assert isinstance(baz.foo, Foo)
+    assert isinstance(baz.bar, Bar)
+
+
+def test_injector_can_no_longer_be_used_after_close(injector):
+    injector.close()
+    with pytest.raises(Injector.AlreadyClosed):
+        injector.inject(IFoo)
