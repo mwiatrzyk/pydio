@@ -1,4 +1,5 @@
 import abc
+import contextlib
 
 from typing import Hashable, Callable, Type, TypeVar, Union, overload
 
@@ -7,38 +8,7 @@ from . import exc
 T, U = TypeVar('T'), TypeVar('U')
 
 
-class IInstance(abc.ABC):
-    """Provides API to manipulate instances created by :class:`IInjector`.
-
-    Instances of this class are created by :class:`IUnboundInstance`
-    subclasses.
-    """
-
-    @abc.abstractmethod
-    def get(self) -> Union[T, U]:
-        """Get wrapped object.
-
-        This should always return same instance.
-        """
-
-    @abc.abstractmethod
-    def is_valid(self) -> bool:
-        """Check if object returned by :meth:`get` is valid and can still be
-        used."""
-
-    @abc.abstractmethod
-    def invalidate(self):
-        """Invalidate object returned by :meth:`get`.
-
-        Invalidation may trigger resource clearing, connection shutdown
-        etc. - depending on what was implemented in provider. Please note
-        that invalidation is only meaningful for generator-based providers;
-        in other cases this will do nothing.
-        """
-
-
-class IInjector(abc.ABC):
-    """Provides injector API."""
+class IInjector(contextlib.AbstractContextManager):
 
     class NoProviderFound(exc.Base):
         message_template = "No provider found for key: {self.key!r}"
@@ -59,60 +29,56 @@ class IInjector(abc.ABC):
 
     @abc.abstractmethod
     def inject(self, key):
-        """Injects instance for given ``key``.
-
-        If no provider specified for ``key``, this will raise
-        :exc:`IInjector.NoProviderFound` exception. Otherwise it will either
-        return matching instance from cache (if exists) or create the
-        instance, fill cache with it and return it. Each injector instance
-        will always inject same object for given ``key``.
-
-        :param key:
-            Key pointing to instance to be injected.
-
-            This can be any hashable object, however it will usually be some
-            kind of interface.
-        """
+        pass
 
     @abc.abstractmethod
     def scoped(self, scope: Hashable) -> 'IInjector':
-        """Create scoped injector from this injector."""
+        pass
 
     @abc.abstractmethod
     def close(self):
-        """Closes this injector.
-
-        Behind the scenes, this method will perform cleanup actions on all
-        instances created by this injector. This effectively makes
-        :meth:`inject` to be unusable for this injector.
-        """
+        pass
 
 
-class IUnboundInstance(abc.ABC):
-    """Provides API for creating :class:`IInstance` objects.
-
-    Unbound instances are created and managed by :class:`IProvider`
-    subclasses.
-    """
+class IFactory(abc.ABC):
 
     @abc.abstractmethod
-    def bind(self, injector: IInjector) -> IInstance:
-        """Binds this unbound instance with given params.
+    def is_awaitable(self) -> bool:
+        pass
 
-        :param injector:
-            Instance of :class:`IInjector` to be bound with produced
-            :class:`IInstance` object
-        """
+    @abc.abstractmethod
+    def get_instance(self) -> Union[T, U]:
+        pass
+
+    @abc.abstractmethod
+    def close(self):
+        pass
+
+
+class IUnboundFactory(abc.ABC):
+
+    @property
+    @abc.abstractmethod
+    def scope(self) -> Hashable:
+        pass
+
+    @abc.abstractmethod
+    def is_awaitable(self) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def bind(self, injector: IInjector) -> IFactory:
+        pass
 
 
 class IProvider(abc.ABC):
 
     @overload
-    def get(self, key: Type[T], scope: Hashable=None) -> IUnboundInstance:
+    def get(self, key: Type[T], scope: Hashable=None) -> IUnboundFactory:
         pass
 
     @overload
-    def get(self, key: Hashable, scope: Hashable=None) -> IUnboundInstance:
+    def get(self, key: Hashable, scope: Hashable=None) -> IUnboundFactory:
         pass
 
     @abc.abstractmethod

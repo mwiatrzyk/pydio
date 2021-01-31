@@ -1,6 +1,5 @@
 import weakref
 import functools
-import contextlib
 
 from . import _utils
 from .base import IProvider, IInjector
@@ -8,7 +7,7 @@ from .base import IProvider, IInjector
 _skip_none_kwargs = _utils.KwargsFilter(lambda x: x is None)
 
 
-class Injector(IInjector, contextlib.AbstractContextManager):
+class Injector(IInjector):
 
     def __init__(self, provider: IProvider):
         self._provider = provider
@@ -33,7 +32,7 @@ class Injector(IInjector, contextlib.AbstractContextManager):
         if self._provider is None:
             raise self.AlreadyClosed()
         if key in self._cache:
-            return self._cache[key].get()
+            return self._cache[key].get_instance()
         unbound_instance = self._provider.get(key)
         if unbound_instance is None:
             raise self.NoProviderFound(key=key)
@@ -43,7 +42,7 @@ class Injector(IInjector, contextlib.AbstractContextManager):
             raise self.OutOfScope(key=key, expected_scope=unbound_instance.scope, given_scope=self._scope)
         instance = unbound_instance.bind(self)
         self._cache[key] = instance
-        return instance.get()
+        return instance.get_instance()
 
     def scoped(self, scope):
         injector = self.__class__(self._provider)
@@ -59,7 +58,7 @@ class Injector(IInjector, contextlib.AbstractContextManager):
             for child in self._children:
                 child.close()
             for instance in self._cache.values():
-                instance.invalidate()
+                instance.close()
 
         async def do_async_close():
             self._provider = None
@@ -67,9 +66,9 @@ class Injector(IInjector, contextlib.AbstractContextManager):
                 await child.close()
             for instance in self._cache.values():
                 if instance.is_awaitable():
-                    await instance.invalidate()
+                    await instance.close()
                 else:
-                    instance.invalidate()
+                    instance.close()
 
         if not self._provider.has_awaitables():
             return do_close()
