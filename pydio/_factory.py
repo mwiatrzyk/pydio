@@ -50,10 +50,13 @@ class AsyncGeneratorFactory(IFactory):
 
     def close(self):
         async def async_close():
-            try:
-                await self._generator.__anext__()
-            except StopAsyncIteration:
-                pass
+            prev_instance = self._instance
+            self._instance = NULL
+            if prev_instance is not _UNDEFINED:
+                try:
+                    await self._generator.__anext__()
+                except StopAsyncIteration:
+                    pass
         return async_close()
 
 
@@ -75,7 +78,9 @@ class CoroutineFactory(IFactory):
         return async_get_instance()
 
     def close(self):
-        pass
+        async def async_close():
+            self._instance = NULL
+        return async_close()
 
 
 class FunctionFactory(IFactory):
@@ -91,7 +96,7 @@ class FunctionFactory(IFactory):
         return self._instance
 
     def close(self):
-        pass
+        self._instance = NULL
 
 
 class InstanceFactory(IFactory):
@@ -107,7 +112,7 @@ class InstanceFactory(IFactory):
         return self._value
 
     def close(self):
-        pass
+        self._value = NULL
 
 
 class GenericUnboundFactory(IUnboundFactory):
