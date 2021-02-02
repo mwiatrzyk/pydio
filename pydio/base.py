@@ -6,7 +6,12 @@ from typing import Hashable, Callable, Type, TypeVar, Union, Any, overload
 from . import exc, _utils
 
 T, U = TypeVar('T'), TypeVar('U')
+
 NULL = _utils.Constant('NULL')
+
+DEFAULT_ENV = _utils.Constant('DEFAULT_ENV')
+
+DEFAULT_SCOPE = _utils.Constant('DEFAULT_SCOPE')
 
 
 class IInjector(contextlib.AbstractContextManager):
@@ -89,28 +94,33 @@ class IUnboundFactory(abc.ABC):
 class IProvider(abc.ABC):
 
     class DoubleRegistrationError(exc.ProviderError):
-        message_template = "This key is already in use: {self.key!r}"
+        message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
 
         @property
         def key(self) -> Hashable:
             return self.args['key']
 
-    @overload
-    def get(self, key: Type[T], scope: Hashable=None) -> IUnboundFactory:
-        pass
+        @property
+        def env(self) -> Hashable:
+            return self.args['env']
 
     @overload
-    def get(self, key: Hashable, scope: Hashable=None) -> IUnboundFactory:
+    def get(self, key: Type[T], env: Hashable=DEFAULT_ENV) -> IUnboundFactory:
+        pass
+
+    @overload
+    def get(self, key: Hashable, env: Hashable=DEFAULT_ENV) -> IUnboundFactory:
         pass
 
     @abc.abstractmethod
-    def get(self, key, scope=None):
+    def get(self, key, env=DEFAULT_ENV):
+        pass
+
+    # TODO: Rename to register_factory
+    @abc.abstractmethod
+    def register_func(self, key: Hashable, func: Callable, scope: Hashable=DEFAULT_SCOPE, env: Hashable=DEFAULT_ENV):
         pass
 
     @abc.abstractmethod
-    def register_func(self, key: Hashable, func: Callable, scope: Hashable=None):
-        pass
-
-    @abc.abstractmethod
-    def register_instance(self, key: Hashable, value: Any, scope: Hashable=None):
+    def register_instance(self, key: Hashable, value: Any, scope: Hashable=DEFAULT_SCOPE, env: Hashable=DEFAULT_ENV):
         pass

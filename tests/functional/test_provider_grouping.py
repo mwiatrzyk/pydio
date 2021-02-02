@@ -9,12 +9,12 @@ bar_provider = Provider()
 
 
 @foo_provider.provides(IFoo)
-def make_foo(*args):
+def make_foo(*args, **kwargs):
     return Foo()
 
 
 @bar_provider.provides(IBar)
-def make_bar(*args):
+def make_bar(*args, **kwargs):
     return Bar()
 
 

@@ -12,22 +12,22 @@ provider = Provider()
 
 
 @provider.provides('db')
-def make_db(*args):
+def make_db(*args, **kwargs):
     return Mock('db')
 
 
 @provider.provides(IFoo)
-def make_foo(*args):
+def make_foo(*args, **kwargs):
     return Foo()
 
 
 @provider.provides(IBar, scope='sc1')
-def make_bar(*args):
+def make_bar(*args, **kwargs):
     return Bar()
 
 
 @provider.provides('connection', scope='sc1')
-def make_connection(injector: Injector, *args):
+def make_connection(injector: Injector, *args, **kwargs):
     db = injector.inject('db')
     connection = db.connect()
     yield connection
@@ -35,12 +35,12 @@ def make_connection(injector: Injector, *args):
 
 
 @provider.provides('baz', scope='sc2')
-def make_baz(*args):
+def make_baz(*args, **kwargs):
     return Baz()
 
 
 @provider.provides('spam', scope='sc21')
-def make_spam(*args):
+def make_spam(*args, **kwargs):
     return 'spam'
 
 

@@ -1,16 +1,19 @@
 import weakref
 import functools
 
+from typing import Hashable
+
 from . import exc
-from .base import IProvider, IInjector
+from .base import IProvider, IInjector, DEFAULT_ENV, DEFAULT_SCOPE
 
 
 class Injector(IInjector):
 
-    def __init__(self, provider: IProvider):
+    def __init__(self, provider: IProvider, env: Hashable=DEFAULT_ENV):
         self._provider = provider
+        self._env = env
         self._cache = {}
-        self._scope = None
+        self._scope = DEFAULT_SCOPE
         self._children = []
         self.__parent = None
 
@@ -31,7 +34,7 @@ class Injector(IInjector):
             raise exc.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
-        unbound_instance = self._provider.get(key)
+        unbound_instance = self._provider.get(key, self._env)
         if unbound_instance is None:
             raise self.NoProviderFoundError(key=key)
         if unbound_instance.scope != self._scope:

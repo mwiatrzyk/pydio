@@ -14,12 +14,12 @@ provider = Provider()
 
 @provider.provides('startup')
 @provider.provides('teardown')
-def make_startup(_, key: Hashable):
+def make_startup(_, key: Hashable, **kwargs):
     return Mock(key)
 
 
 @provider.provides(IFoo)
-def make_foo(injector: Injector, key: Hashable):
+def make_foo(injector: Injector, key: Hashable, **kwargs):
     startup = injector.inject('startup')
     teardown = injector.inject('teardown')
     startup()

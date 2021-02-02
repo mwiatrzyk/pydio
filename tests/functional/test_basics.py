@@ -11,17 +11,17 @@ provider = Provider()
 
 
 @provider.provides(IFoo)
-def make_foo(*args):
+def make_foo(*args, **kwargs):
     return Foo()
 
 
 @provider.provides(IBar)
-def make_bar(*args):
+def make_bar(*args, **kwargs):
     return Bar()
 
 
 @provider.provides('baz')
-def make_baz(injector: Injector, key: Hashable):
+def make_baz(injector: Injector, *args, **kwargs):
     return Baz(
         foo=injector.inject(IFoo),
         bar=injector.inject(IBar))

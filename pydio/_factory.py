@@ -1,7 +1,7 @@
 import functools
 
 from . import exc, _utils
-from .base import IUnboundFactory, IFactory, NULL
+from .base import IUnboundFactory, IFactory, NULL, DEFAULT_ENV
 
 _UNDEFINED = _utils.Constant('_UNDEFINED')
 
@@ -117,11 +117,12 @@ class InstanceFactory(IFactory):
 
 class GenericUnboundFactory(IUnboundFactory):
 
-    def __init__(self, factory_class, key, func, scope=None):
+    def __init__(self, factory_class, key, func, scope=None, env=DEFAULT_ENV):
         self._factory_class = factory_class
         self._key = key
         self._func = func
         self._scope = scope
+        self._env = env
 
     @property
     def scope(self):
@@ -131,14 +132,17 @@ class GenericUnboundFactory(IUnboundFactory):
         return self._factory_class.is_awaitable()
 
     def bind(self, injector):
-        return self._factory_class(functools.partial(self._func, injector, self._key))
+        if self._env is DEFAULT_ENV:
+            return self._factory_class(functools.partial(self._func, injector, self._key))
+        return self._factory_class(functools.partial(self._func, injector, self._key, env=self._env))
 
 
 class UnboundInstanceFactory(IUnboundFactory):
 
-    def __init__(self, value, scope=None):
+    def __init__(self, value, scope=None, env=DEFAULT_ENV):
         self._value = value
         self._scope = scope
+        self._env = env
 
     @property
     def scope(self):

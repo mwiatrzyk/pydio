@@ -2,40 +2,51 @@ import abc
 import inspect
 import functools
 
-from . import _factory
-from .base import IProvider
+from . import _factory, _utils
+from .base import IProvider, DEFAULT_ENV, DEFAULT_SCOPE
 
 
 class Provider(IProvider):
 
     def __init__(self):
-        self._factory_funcs = {}
+        self._unbound_factories = {}
 
-    def _check_key_availability(self, key):
-        if key in self._factory_funcs:
-            raise self.DoubleRegistrationError(key=key)
+    def _check_key_availability(self, key, env):
+        found = self._unbound_factories.get(key, {}).get(env)
+        if found is not None:
+            raise self.DoubleRegistrationError(key=key, env=env)
 
-    def get(self, key):
-        return self._factory_funcs.get(key)
+    def _iter_factory_funcs(self):
+        for envs in self._unbound_factories.values():
+            for unbound_factory in envs.values():
+                yield unbound_factory
+
+    def get(self, key, env=DEFAULT_ENV):
+        envs = self._unbound_factories.get(key, {})
+        found = envs.get(env)
+        if found is None and env != DEFAULT_ENV:
+            return envs.get(DEFAULT_ENV)
+        return found
 
     def has_awaitables(self):
-        return any(factory.is_awaitable() for factory in self._factory_funcs.values())
+        return any(factory.is_awaitable() for factory in self._iter_factory_funcs())
 
     def attach(self, provider: 'Provider'):
-        for k, v in provider._factory_funcs.items():
-            self._check_key_availability(k)
-            self._factory_funcs[k] = v
+        for key, envs in provider._unbound_factories.items():
+            for env, unbound_factory in envs.items():
+                self._check_key_availability(key, env)
+                self._unbound_factories.setdefault(key, {})[env] = unbound_factory
 
-    def register_func(self, key, func, scope=None):
-        self._check_key_availability(key)
-        self._factory_funcs[key] =\
+    def register_func(self, key, func, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+        self._check_key_availability(key, env)
+        self._unbound_factories.setdefault(key, {})[env] =\
             _factory.GenericUnboundFactory(
-                self.__get_factory_class_for(func), key, func, scope=scope)
+                self.__get_factory_class_for(func), key, func, scope=scope, env=env)
 
-    def register_instance(self, key, value, scope=None):
-        self._check_key_availability(key)
-        self._factory_funcs[key] =\
-            _factory.UnboundInstanceFactory(value, scope=scope)
+    def register_instance(self, key, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+        self._check_key_availability(key, env)
+        self._unbound_factories.setdefault(key, {})[env] =\
+            _factory.UnboundInstanceFactory(value, scope=scope, env=env)
 
     def __get_factory_class_for(self, func):
         if inspect.isasyncgenfunction(func):
@@ -47,10 +58,10 @@ class Provider(IProvider):
         else:
             return _factory.FunctionFactory
 
-    def provides(self, key, **kwargs):
+    def provides(self, key, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
 
         def decorator(func):
-            self.register_func(key, func, **kwargs)
+            self.register_func(key, func, scope=scope, env=env)
             return func
 
         return decorator
