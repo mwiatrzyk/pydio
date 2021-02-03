@@ -71,7 +71,7 @@ publish_coverage:
     CODECOV_TOKEN: $CODECOV_TOKEN
   script:
     - apt-get install -y curl
-    - pipenv run invoke coverage
+    - pipenv run invoke coverage -f0
     - bash <(curl -s https://codecov.io/bash)
   only:
     - master
