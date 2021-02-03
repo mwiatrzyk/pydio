@@ -17,5 +17,6 @@ tox = "*"
 autoflake = "*"
 isort = "*"
 yapf = "*"
+pylint = "*"
 
 [requires]

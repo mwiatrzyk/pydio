@@ -55,9 +55,13 @@ def serve_coverage(ctx, host='localhost', port=8000):
 @invoke.task
 def lint_code(ctx):
     """Run linter on source files."""
-    ctx.run(
-        'pylint -f colorized --fail-under=9.0 pydio scripts tasks.py setup.py'
-    )
+    args = ['pylint -f colorized --fail-under=9.0 pydio']
+    args.extend([
+        '-d missing-module-docstring',
+        '-d missing-class-docstring',
+        '-d missing-function-docstring',
+    ])
+    ctx.run(' '.join(args))
 
 
 @invoke.task
@@ -162,7 +166,7 @@ def serve_docs(ctx, host='localhost', port=8000):
 
 @invoke.task
 def validate_tag(ctx, tag):
-    """Check CHANGELOG.md and mockify/__init__.py agains given tag."""
+    """Check CHANGELOG.md and pydio/__init__.py agains given tag."""
     ctx.run('scripts/tag.py -c {}'.format(tag))
 
 
