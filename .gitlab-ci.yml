@@ -66,7 +66,7 @@ check_lint:
     - pipenv run invoke lint
 
 publish_coverage:
-  stage: deploy
+  stage: coverage
   variables:
     CODECOV_TOKEN: $CODECOV_TOKEN
   script:
