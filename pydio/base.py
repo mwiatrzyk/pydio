@@ -35,7 +35,7 @@ class IInjector(contextlib.AbstractContextManager):
     class OutOfScopeError(exc.InjectorError):
         message_template =\
             "Cannot inject {self.key!r} due to scope mismatch: "\
-            "{self.expected_scope!r} (expected) != {self.given_scope} (given)"
+            "{self.expected_scope!r} (expected) != {self.given_scope!r} (given)"
 
         @property
         def key(self) -> Hashable:

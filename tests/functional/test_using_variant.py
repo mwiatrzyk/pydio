@@ -16,9 +16,9 @@ from mockify.mock import Mock
 from pydio.api import Injector, Provider, Variant
 from tests.stubs import IFoo
 
-IFoo1 = Variant(IFoo, 1, 2, c='one')
+IFoo1 = Variant(IFoo, foo='one')
 
-IFoo2 = Variant(IFoo, 1, 2, c='two')
+IFoo2 = Variant(IFoo, foo='two')
 
 provider = Provider()
 

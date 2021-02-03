@@ -32,7 +32,7 @@ def test(_):
 
 
 @invoke.task
-def coverage(ctx, fail_under=96):
+def coverage(ctx, fail_under=94):
     """Run code coverage check."""
     ctx.run(
         'pytest tests/ --cov=pydio --cov-fail-under={fail_under} '
@@ -41,10 +41,11 @@ def coverage(ctx, fail_under=96):
     )
 
 
-@invoke.task(coverage)
+@invoke.task
 def serve_coverage(ctx, host='localhost', port=8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
+    ctx.run('inv coverage -f0')
     ctx.run(
         'python -m http.server {} -d reports/coverage/html -b {}'.format(
             port, host
