@@ -32,6 +32,7 @@ class Injector(IInjector):
     def _parent(self):
         if self.__parent is not None:
             return self.__parent()
+        return None
 
     @_parent.setter
     def _parent(self, value):
@@ -60,8 +61,8 @@ class Injector(IInjector):
     def scoped(self, scope):
         injector = self.__class__(self._provider)
         self._children.append(injector)
-        injector._parent = self
-        injector._scope = scope
+        injector._parent = self  # pylint: disable=protected-access
+        injector._scope = scope  # pylint: disable=protected-access
         return injector
 
     def close(self):
@@ -85,5 +86,4 @@ class Injector(IInjector):
 
         if not self._provider.has_awaitables():
             return do_close()
-        else:
-            return do_async_close()
+        return do_async_close()

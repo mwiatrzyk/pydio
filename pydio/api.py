@@ -12,4 +12,6 @@ from .injector import Injector
 from .provider import Provider
 from .variant import Variant
 
-__all__ = ['Injector', 'Provider', 'Variant']
+__all__ = [
+    'Injector', 'Provider', 'Variant',
+]

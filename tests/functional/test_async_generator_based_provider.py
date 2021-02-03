@@ -19,32 +19,33 @@ provider = Provider()
 
 
 @provider.provides('database')
-def make_database(_, *args, **kwargs):
+def make_database():
     return Mock('database')
 
 
 @provider.provides('connection')
-async def make_connection(injector: Injector, *args, **kwargs):
+async def make_connection(injector: Injector):
     database = injector.inject('database')
     connection = database.connect()
     yield connection
     connection.close()
 
 
-@pytest.fixture
-def injector():
-    return Injector(provider)
+class TestAsyncGeneratorBasedProvider:
 
+    @pytest.fixture
+    def injector(self):
+        return Injector(provider)
 
-@pytest.mark.asyncio
-async def test_injector_should_properly_create_and_close_instances_provided_by_async_generators(
-    injector
-):
-    connection = Mock('connection')
-    database = injector.inject('database')
-    database.connect.expect_call().will_once(Return(connection))
-    with satisfied(database):
-        assert await injector.inject('connection') is connection
-    connection.close.expect_call().times(1)
-    with satisfied(connection):
-        await injector.close()
+    @pytest.mark.asyncio
+    async def test_injector_should_properly_create_and_close_instances_provided_by_async_generators(
+        self, injector
+    ):
+        connection = Mock('connection')
+        database = injector.inject('database')
+        database.connect.expect_call().will_once(Return(connection))
+        with satisfied(database):
+            assert await injector.inject('connection') is connection
+        connection.close.expect_call().times(1)
+        with satisfied(connection):
+            await injector.close()

@@ -23,7 +23,7 @@ class Base(Exception, abc.ABC):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self._args = dict(kwargs)
+        self._params = dict(kwargs)
 
     def __str__(self):
         return self.message_template.format(self=self)
@@ -37,10 +37,10 @@ class Base(Exception, abc.ABC):
         """
 
     @property
-    def args(self) -> dict:
-        """Key-value pairs containing named parameters this exception was
-        created with."""
-        return self._args
+    def params(self) -> dict:
+        """Dictionary containing exception parameters given in
+        constructor."""
+        return self._params
 
 
 class AlreadyClosedError(Base):

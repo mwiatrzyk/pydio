@@ -30,22 +30,24 @@ class IInjector(contextlib.AbstractContextManager):
 
         @property
         def key(self) -> Hashable:
-            return self.args['key']
+            return self.params['key']
 
     class OutOfScopeError(exc.InjectorError):
-        message_template = "Cannot inject {self.key!r} due to scope mismatch: {self.expected_scope!r} (expected) != {self.given_scope} (given)"
+        message_template =\
+            "Cannot inject {self.key!r} due to scope mismatch: "\
+            "{self.expected_scope!r} (expected) != {self.given_scope} (given)"
 
         @property
         def key(self) -> Hashable:
-            return self.args['key']
+            return self.params['key']
 
         @property
         def expected_scope(self) -> Hashable:
-            return self.args['expected_scope']
+            return self.params['expected_scope']
 
         @property
         def given_scope(self) -> Hashable:
-            return self.args['given_scope']
+            return self.params['given_scope']
 
     @overload
     def inject(self, key: Type[T]) -> T:
@@ -109,11 +111,11 @@ class IProvider(abc.ABC):
 
         @property
         def key(self) -> Hashable:
-            return self.args['key']
+            return self.params['key']
 
         @property
         def env(self) -> Hashable:
-            return self.args['env']
+            return self.params['env']
 
     @overload
     def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> IUnboundFactory:

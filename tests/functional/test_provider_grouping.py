@@ -18,25 +18,26 @@ bar_provider = Provider()
 
 
 @foo_provider.provides(IFoo)
-def make_foo(*args, **kwargs):
+def make_foo():
     return Foo()
 
 
 @bar_provider.provides(IBar)
-def make_bar(*args, **kwargs):
+def make_bar():
     return Bar()
 
 
-@pytest.fixture
-def injector():
-    provider = Provider()
-    provider.attach(foo_provider)
-    provider.attach(bar_provider)
-    return Injector(provider)
+class TestProviderGrouping:
 
+    @pytest.fixture
+    def injector(self):
+        provider = Provider()
+        provider.attach(foo_provider)
+        provider.attach(bar_provider)
+        return Injector(provider)
 
-def test_injector_should_inject_properly_when_provider_grouping_is_used(
-    injector
-):
-    assert isinstance(injector.inject(IFoo), Foo)
-    assert isinstance(injector.inject(IBar), Bar)
+    def test_injector_should_inject_properly_when_provider_grouping_is_used(
+        self, injector
+    ):
+        assert isinstance(injector.inject(IFoo), Foo)
+        assert isinstance(injector.inject(IBar), Bar)

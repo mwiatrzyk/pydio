@@ -42,7 +42,7 @@ class Provider(IProvider):
         )
 
     def attach(self, provider: 'Provider'):
-        for key, envs in provider._unbound_factories.items():
+        for key, envs in provider._unbound_factories.items():  # pylint: disable=protected-access
             for env, unbound_factory in envs.items():
                 self._check_key_availability(key, env)
                 self._unbound_factories.setdefault(key,
@@ -61,15 +61,15 @@ class Provider(IProvider):
         self._unbound_factories.setdefault(key, {})[env] =\
             _factory.UnboundInstanceFactory(value, scope=scope, env=env)
 
-    def __get_factory_class_for(self, func):
+    @staticmethod
+    def __get_factory_class_for(func):
         if inspect.isasyncgenfunction(func):
             return _factory.AsyncGeneratorFactory
-        elif inspect.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return _factory.CoroutineFactory
-        elif inspect.isgeneratorfunction(func):
+        if inspect.isgeneratorfunction(func):
             return _factory.GeneratorFactory
-        else:
-            return _factory.FunctionFactory
+        return _factory.FunctionFactory
 
     def provides(self, key, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
 

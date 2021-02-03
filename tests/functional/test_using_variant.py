@@ -24,27 +24,28 @@ provider = Provider()
 
 
 @provider.provides('mock')
-def make_mock(*args, **kwargs):
+def make_mock():
     return Mock('mock')
 
 
 @provider.provides(IFoo1)
 @provider.provides(IFoo2)
-def make_first_foo(injector: Injector, key: Variant, *args, **kwargs):
+def make_first_foo(injector: Injector, key: Variant):
     return injector.inject('mock').make_first_foo(key)
 
 
-@pytest.fixture
-def injector():
-    return Injector(provider)
+class TestUsingVariant:
 
+    @pytest.fixture
+    def injector(self):
+        return Injector(provider)
 
-def test_inject_using_variant_to_pass_additional_params_to_underlying_factory(
-    injector
-):
-    mock = injector.inject('mock')
-    mock.make_first_foo.expect_call(IFoo1).will_once(Return('first'))
-    mock.make_first_foo.expect_call(IFoo2).will_once(Return('second'))
-    with satisfied(mock):
-        assert injector.inject(IFoo1) == 'first'
-        assert injector.inject(IFoo2) == 'second'
+    def test_inject_using_variant_to_pass_additional_params_to_underlying_factory(
+        self, injector
+    ):
+        mock = injector.inject('mock')
+        mock.make_first_foo.expect_call(IFoo1).will_once(Return('first'))
+        mock.make_first_foo.expect_call(IFoo2).will_once(Return('second'))
+        with satisfied(mock):
+            assert injector.inject(IFoo1) == 'first'
+            assert injector.inject(IFoo2) == 'second'

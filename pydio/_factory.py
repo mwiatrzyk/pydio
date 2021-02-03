@@ -8,10 +8,11 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import inspect
 import functools
 
 from . import _utils
-from .base import DEFAULT_ENV, NULL, IFactory, IUnboundFactory
+from .base import DEFAULT_ENV, DEFAULT_SCOPE, NULL, IFactory, IUnboundFactory
 
 _UNDEFINED = _utils.Constant('_UNDEFINED')
 
@@ -135,10 +136,11 @@ class InstanceFactory(IFactory):
 
 class GenericUnboundFactory(IUnboundFactory):
 
-    def __init__(self, factory_class, key, func, scope=None, env=DEFAULT_ENV):
+    def __init__(self, factory_class, key, func, scope=DEFAULT_SCOPE, env=DEFAULT_ENV): # pylint: disable=too-many-arguments
         self._factory_class = factory_class
         self._key = key
         self._func = func
+        self._func_params = inspect.signature(func).parameters
         self._scope = scope
         self._env = env
 
@@ -150,18 +152,26 @@ class GenericUnboundFactory(IUnboundFactory):
         return self._factory_class.is_awaitable()
 
     def bind(self, injector):
-        if self._env is DEFAULT_ENV:
-            return self._factory_class(
-                functools.partial(self._func, injector, self._key)
-            )
-        return self._factory_class(
-            functools.partial(self._func, injector, self._key, env=self._env)
-        )
+        return self._factory_class(self.__make_partial(injector))
+
+    def __make_partial(self, injector):
+        # TODO: Current implementation requires factory functions to use args
+        # with forced name. Although those params can be given in any order, I
+        # would like to rewrite this part to allow matching by annotation, so
+        # different names could be used
+        kwargs = {}
+        if 'injector' in self._func_params:
+            kwargs['injector'] = injector
+        if 'key' in self._func_params:
+            kwargs['key'] = self._key
+        if 'env' in self._func_params:
+            kwargs['env'] = self._env
+        return functools.partial(self._func, **kwargs)
 
 
 class UnboundInstanceFactory(IUnboundFactory):
 
-    def __init__(self, value, scope=None, env=DEFAULT_ENV):
+    def __init__(self, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
         self._value = value
         self._scope = scope
         self._env = env
@@ -173,5 +183,5 @@ class UnboundInstanceFactory(IUnboundFactory):
     def is_awaitable(self):
         return False
 
-    def bind(self, *args):
+    def bind(self, *_):
         return InstanceFactory(self._value)
