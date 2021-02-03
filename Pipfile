@@ -18,5 +18,6 @@ autoflake = "*"
 isort = "*"
 yapf = "*"
 pylint = "*"
+twine = "*"
 
 [requires]
