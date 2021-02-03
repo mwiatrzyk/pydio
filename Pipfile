@@ -9,5 +9,13 @@ name = "pypi"
 pytest = "*"
 pytest-asyncio = "*"
 mockify = "*"
+invoke = "*"
+pytest-cov = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+tox = "*"
+autoflake = "*"
+isort = "*"
+yapf = "*"
 
 [requires]

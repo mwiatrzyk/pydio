@@ -1,15 +1,23 @@
+# ---------------------------------------------------------------------------
+# pydio/injector.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import weakref
-import functools
-
 from typing import Hashable
 
 from . import exc
-from .base import IProvider, IInjector, DEFAULT_ENV, DEFAULT_SCOPE
+from .base import DEFAULT_ENV, DEFAULT_SCOPE, IInjector, IProvider
 
 
 class Injector(IInjector):
 
-    def __init__(self, provider: IProvider, env: Hashable=DEFAULT_ENV):
+    def __init__(self, provider: IProvider, env: Hashable = DEFAULT_ENV):
         self._provider = provider
         self._env = env
         self._cache = {}
@@ -40,7 +48,11 @@ class Injector(IInjector):
         if unbound_instance.scope != self._scope:
             if self._parent is not None:
                 return self._parent.inject(key)
-            raise self.OutOfScopeError(key=key, expected_scope=unbound_instance.scope, given_scope=self._scope)
+            raise self.OutOfScopeError(
+                key=key,
+                expected_scope=unbound_instance.scope,
+                given_scope=self._scope
+            )
         instance = unbound_instance.bind(self)
         self._cache[key] = instance
         return instance.get_instance()

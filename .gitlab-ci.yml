@@ -1,0 +1,99 @@
+image: python:3.7-slim
+
+stages:
+  - prepare
+  - build
+  - test
+  - coverage
+  - lint
+  - deploy
+
+before_script:
+  - apt-get update
+  - apt-get install -y git
+  - pip install pipenv
+  - pipenv install --skip-lock --dev
+
+validate_tag:
+  stage: prepare
+  script:
+    - pipenv run invoke validate-tag $CI_COMMIT_TAG
+  only:
+    - tags
+
+build:
+  stage: build
+  script:
+    - pipenv run invoke build
+
+.base-test:
+  stage: test
+  script:
+    - pipenv run tox -e ${PY_ENV}
+
+test Py3.9:
+  image: python:3.9-slim
+  variables:
+    PY_ENV: py39
+  extends: .base-test
+
+test Py3.8:
+  image: python:3.8-slim
+  variables:
+    PY_ENV: py38
+  extends: .base-test
+
+test Py3.7:
+  image: python:3.7-slim
+  variables:
+    PY_ENV: py37
+  extends: .base-test
+
+test Py3.6:
+  image: python:3.6-slim
+  variables:
+    PY_ENV: py36
+  extends: .base-test
+
+check_coverage:
+  stage: coverage
+  script:
+    - pipenv run invoke coverage
+
+check_lint:
+  stage: lint
+  script:
+    - pipenv run invoke lint
+
+publish_coverage:
+  stage: deploy
+  variables:
+    CODECOV_TOKEN: $CODECOV_TOKEN
+  script:
+    - apt-get install -y curl
+    - pipenv run invoke coverage
+    - bash <(curl -s https://codecov.io/bash)
+  only:
+    - master
+    - tags
+
+deploy_test:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $TEST_PYPI_USER
+    TWINE_PASSWORD: $TEST_PYPI_PASS
+  script:
+    - pipenv run invoke deploy-test
+  only:
+    - master
+    - tags
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PYPI_USER
+    TWINE_PASSWORD: $PYPI_PASS
+  script:
+    - pipenv run invoke deploy-prod
+  only:
+    - tags

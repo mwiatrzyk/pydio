@@ -1,10 +1,20 @@
+# ---------------------------------------------------------------------------
+# tests/unit/test_factory.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import pytest
-
-from mockify.mock import Mock
 from mockify.actions import Return
 from mockify.core import satisfied
+from mockify.mock import Mock
 
-from pydio import exc, base, _factory as factory
+from pydio import _factory as factory
+from pydio import base
 
 
 class TestGeneratorFactory:
@@ -67,7 +77,9 @@ class TestAsyncGeneratorFactory:
             assert await self.uut.get_instance() is connection
 
     @pytest.mark.asyncio
-    async def test_closing_generator_factory_invokes_statement_after_yield(self):
+    async def test_closing_generator_factory_invokes_statement_after_yield(
+        self
+    ):
         connection = Mock('connection')
         self.database.connect.expect_call().will_once(Return(connection))
         with satisfied(self.database):

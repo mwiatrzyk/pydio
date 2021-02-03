@@ -1,10 +1,19 @@
+# ---------------------------------------------------------------------------
+# tests/functional/test_async_generator_based_provider.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import pytest
-
-from mockify.mock import Mock
 from mockify.actions import Return
 from mockify.core import satisfied
+from mockify.mock import Mock
 
-from pydio.api import Provider, Injector
+from pydio.api import Injector, Provider
 
 provider = Provider()
 
@@ -28,7 +37,9 @@ def injector():
 
 
 @pytest.mark.asyncio
-async def test_injector_should_properly_create_and_close_instances_provided_by_async_generators(injector):
+async def test_injector_should_properly_create_and_close_instances_provided_by_async_generators(
+    injector
+):
     connection = Mock('connection')
     database = injector.inject('database')
     database.connect.expect_call().will_once(Return(connection))

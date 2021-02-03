@@ -1,2 +1,13 @@
 *.pyc
 __pycache__
+*.eggs/
+*.vscode/
+*.egg-info/
+pydio/_version.py
+reports/
+dist/
+build/
+.coverage
+Pipfile.lock
+.python-version
+.tox

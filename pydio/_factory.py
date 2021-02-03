@@ -1,7 +1,17 @@
+# ---------------------------------------------------------------------------
+# pydio/_factory.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import functools
 
-from . import exc, _utils
-from .base import IUnboundFactory, IFactory, NULL, DEFAULT_ENV
+from . import _utils
+from .base import DEFAULT_ENV, NULL, IFactory, IUnboundFactory
 
 _UNDEFINED = _utils.Constant('_UNDEFINED')
 
@@ -42,13 +52,16 @@ class AsyncGeneratorFactory(IFactory):
         return True
 
     def get_instance(self):
+
         async def async_get_instance():
             if self._instance is _UNDEFINED:
                 self._instance = await self._generator.__anext__()
             return self._instance
+
         return async_get_instance()
 
     def close(self):
+
         async def async_close():
             prev_instance = self._instance
             self._instance = NULL
@@ -57,6 +70,7 @@ class AsyncGeneratorFactory(IFactory):
                     await self._generator.__anext__()
                 except StopAsyncIteration:
                     pass
+
         return async_close()
 
 
@@ -71,15 +85,19 @@ class CoroutineFactory(IFactory):
         return True
 
     def get_instance(self):
+
         async def async_get_instance():
             if self._instance is _UNDEFINED:
                 self._instance = await self._awaitable
             return self._instance
+
         return async_get_instance()
 
     def close(self):
+
         async def async_close():
             self._instance = NULL
+
         return async_close()
 
 
@@ -133,8 +151,12 @@ class GenericUnboundFactory(IUnboundFactory):
 
     def bind(self, injector):
         if self._env is DEFAULT_ENV:
-            return self._factory_class(functools.partial(self._func, injector, self._key))
-        return self._factory_class(functools.partial(self._func, injector, self._key, env=self._env))
+            return self._factory_class(
+                functools.partial(self._func, injector, self._key)
+            )
+        return self._factory_class(
+            functools.partial(self._func, injector, self._key, env=self._env)
+        )
 
 
 class UnboundInstanceFactory(IUnboundFactory):

@@ -1,9 +1,17 @@
-import abc
+# ---------------------------------------------------------------------------
+# pydio/provider.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import inspect
-import functools
 
-from . import _factory, _utils
-from .base import IProvider, DEFAULT_ENV, DEFAULT_SCOPE
+from . import _factory
+from .base import DEFAULT_ENV, DEFAULT_SCOPE, IProvider
 
 
 class Provider(IProvider):
@@ -29,13 +37,16 @@ class Provider(IProvider):
         return found
 
     def has_awaitables(self):
-        return any(factory.is_awaitable() for factory in self._iter_factory_funcs())
+        return any(
+            factory.is_awaitable() for factory in self._iter_factory_funcs()
+        )
 
     def attach(self, provider: 'Provider'):
         for key, envs in provider._unbound_factories.items():
             for env, unbound_factory in envs.items():
                 self._check_key_availability(key, env)
-                self._unbound_factories.setdefault(key, {})[env] = unbound_factory
+                self._unbound_factories.setdefault(key,
+                                                   {})[env] = unbound_factory
 
     def register_func(self, key, func, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
         self._check_key_availability(key, env)
@@ -43,7 +54,9 @@ class Provider(IProvider):
             _factory.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope, env=env)
 
-    def register_instance(self, key, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+    def register_instance(
+        self, key, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV
+    ):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
             _factory.UnboundInstanceFactory(value, scope=scope, env=env)

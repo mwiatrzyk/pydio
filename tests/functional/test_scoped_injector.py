@@ -1,12 +1,20 @@
+# ---------------------------------------------------------------------------
+# tests/functional/test_scoped_injector.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import pytest
-
-from mockify.mock import Mock
-from mockify.core import satisfied
 from mockify.actions import Return
+from mockify.core import satisfied
+from mockify.mock import Mock
 
 from pydio.api import Injector, Provider
-
-from tests.stubs import IFoo, Foo, IBar, Bar, Baz
+from tests.stubs import Bar, Baz, Foo, IBar, IFoo
 
 provider = Provider()
 
@@ -62,7 +70,9 @@ def test_scoped_injectors_should_inject_objects_with_matching_scope(injector):
     assert isinstance(sc2.inject('baz'), Baz)
 
 
-def test_scoped_injector_falls_back_to_parent_if_it_cannot_find_provider_with_same_scope(injector):
+def test_scoped_injector_falls_back_to_parent_if_it_cannot_find_provider_with_same_scope(
+    injector
+):
     sc1 = injector.scoped('sc1')
     assert isinstance(sc1.inject(IFoo), Foo)
 
@@ -81,7 +91,9 @@ def test_scoped_injector_can_inject_objects_from_any_parent_scopes(injector):
     assert sc21.inject('spam') == 'spam'
 
 
-def test_when_scoped_injector_is_closed_then_objects_it_created_are_cleared(injector):
+def test_when_scoped_injector_is_closed_then_objects_it_created_are_cleared(
+    injector
+):
     sc1 = injector.scoped('sc1')
 
     connection = Mock('connection')
@@ -95,7 +107,9 @@ def test_when_scoped_injector_is_closed_then_objects_it_created_are_cleared(inje
         sc1.close()
 
 
-def test_when_parent_injector_is_closed_then_child_injectors_are_closed_as_well(injector):
+def test_when_parent_injector_is_closed_then_child_injectors_are_closed_as_well(
+    injector
+):
     sc1 = injector.scoped('sc1')
 
     connection = Mock('connection')

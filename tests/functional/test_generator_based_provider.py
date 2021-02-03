@@ -1,13 +1,21 @@
+# ---------------------------------------------------------------------------
+# tests/functional/test_generator_based_provider.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 from typing import Hashable
 
 import pytest
-
-from mockify.mock import Mock
 from mockify.core import satisfied
+from mockify.mock import Mock
 
-from pydio.api import Provider, Injector
-
-from tests.stubs import IFoo, Foo
+from pydio.api import Injector, Provider
+from tests.stubs import Foo, IFoo
 
 provider = Provider()
 
@@ -48,7 +56,9 @@ def test_injector_should_always_inject_same_instance(injector):
     assert first is second
 
 
-def test_when_injector_gets_closed_then_underlying_generator_proceeds_to_cleanup_phase(injector):
+def test_when_injector_gets_closed_then_underlying_generator_proceeds_to_cleanup_phase(
+    injector
+):
     test_injector_should_always_inject_same_instance(injector)
     teardown = injector.inject('teardown')
     teardown.expect_call().times(1)
@@ -64,4 +74,4 @@ def test_use_injector_as_context_manager(injector):
             startup = injector.inject('startup')
             startup.expect_call().times(1)
             with satisfied(startup):
-                first = injector.inject(IFoo)
+                injector.inject(IFoo)

@@ -1,9 +1,18 @@
+# ---------------------------------------------------------------------------
+# pydio/base.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import abc
 import contextlib
+from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload
 
-from typing import Hashable, Callable, Type, TypeVar, Union, Any, overload
-
-from . import exc, _utils
+from . import _utils, exc
 
 T, U = TypeVar('T'), TypeVar('U')
 
@@ -67,7 +76,9 @@ class IFactory(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_instance(self) -> Union[T, U]:  # TODO: Union[T, U, NULL] (fails on NULL currently)
+    def get_instance(
+        self
+    ) -> Union[T, U]:  # TODO: Union[T, U, NULL] (fails on NULL currently)
         pass
 
     @abc.abstractmethod
@@ -105,11 +116,13 @@ class IProvider(abc.ABC):
             return self.args['env']
 
     @overload
-    def get(self, key: Type[T], env: Hashable=DEFAULT_ENV) -> IUnboundFactory:
+    def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> IUnboundFactory:
         pass
 
     @overload
-    def get(self, key: Hashable, env: Hashable=DEFAULT_ENV) -> IUnboundFactory:
+    def get(
+        self, key: Hashable, env: Hashable = DEFAULT_ENV
+    ) -> IUnboundFactory:
         pass
 
     @abc.abstractmethod
@@ -118,9 +131,21 @@ class IProvider(abc.ABC):
 
     # TODO: Rename to register_factory
     @abc.abstractmethod
-    def register_func(self, key: Hashable, func: Callable, scope: Hashable=DEFAULT_SCOPE, env: Hashable=DEFAULT_ENV):
+    def register_func(
+        self,
+        key: Hashable,
+        func: Callable,
+        scope: Hashable = DEFAULT_SCOPE,
+        env: Hashable = DEFAULT_ENV
+    ):
         pass
 
     @abc.abstractmethod
-    def register_instance(self, key: Hashable, value: Any, scope: Hashable=DEFAULT_SCOPE, env: Hashable=DEFAULT_ENV):
+    def register_instance(
+        self,
+        key: Hashable,
+        value: Any,
+        scope: Hashable = DEFAULT_SCOPE,
+        env: Hashable = DEFAULT_ENV
+    ):
         pass

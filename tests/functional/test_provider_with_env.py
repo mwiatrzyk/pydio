@@ -1,12 +1,19 @@
+# ---------------------------------------------------------------------------
+# tests/functional/test_provider_with_env.py
+#
+# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+#
+# This file is part of PyDio library and is released under the terms of the
+# MIT license: http://opensource.org/licenses/mit-license.php.
+#
+# See LICENSE.txt for details.
+# ---------------------------------------------------------------------------
 import pytest
-
-from pydio.api import Provider, Injector
-
-from mockify.mock import Mock
-from mockify.core import satisfied
 from mockify.actions import Return
+from mockify.mock import Mock
 
-from tests.stubs import IFoo, Foo
+from pydio.api import Injector, Provider
+from tests.stubs import IFoo
 
 provider = Provider()
 
@@ -60,7 +67,9 @@ def test_testing_injector_will_inject_using_testing_factory(testing):
 
 def test_production_injector_will_inject_using_production_factory(production):
     mock = production.inject('mock')
-    mock.make_production_foo.expect_call(IFoo, env='production').will_once(Return(42))
+    mock.make_production_foo.expect_call(IFoo, env='production').will_once(
+        Return(42)
+    )
     assert production.inject(IFoo) == 42
 
 
