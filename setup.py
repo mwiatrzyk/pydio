@@ -8,6 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import re
 import setuptools
 
 
@@ -15,10 +16,30 @@ with open("README.rst", "r") as fd:
     long_description = fd.read()
 
 
+def version_scheme(version):
+
+    def repl(x):
+        return str(int(x.group(0)) + 1)
+
+    if not version.distance:
+        return str(version.tag)
+    major, minor, build = str(version.tag).split('.')
+    build = re.sub(r'(\d+)$', repl, build)  # increase last number (f.e. 0rc1 -> 0rc2, 0 -> 1)
+    return "{}.{}.{}".format(major, minor, build)
+
+
+def local_scheme(version):
+    if not version.distance:
+        return ''
+    return "+{}".format(version.distance)
+
+
 setuptools.setup(
     name="PyDio",
     use_scm_version={
         'write_to': 'pydio/_version.py',
+        'version_scheme': version_scheme,
+        'local_scheme': local_scheme,
     },
     setup_requires=['setuptools_scm'],
     author="Maciej Wiatrzyk",
