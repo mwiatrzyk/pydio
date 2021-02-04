@@ -37,7 +37,9 @@ def coverage(ctx, fail_under=94):
     ctx.run(
         'pytest tests/ --cov=pydio --cov-fail-under={fail_under} '
         '--cov-report=html:reports/coverage/html '
-        '--cov-report=xml:reports/coverage/coverage.xml'.format(fail_under=fail_under)
+        '--cov-report=xml:reports/coverage/coverage.xml'.format(
+            fail_under=fail_under
+        )
     )
 
 
@@ -57,11 +59,13 @@ def serve_coverage(ctx, host='localhost', port=8000):
 def lint_code(ctx):
     """Run linter on source files."""
     args = ['pylint -f colorized --fail-under=9.0 pydio']
-    args.extend([
-        '-d missing-module-docstring',
-        '-d missing-class-docstring',
-        '-d missing-function-docstring',
-    ])
+    args.extend(
+        [
+            '-d missing-module-docstring',
+            '-d missing-class-docstring',
+            '-d missing-function-docstring',
+        ]
+    )
     ctx.run(' '.join(args))
 
 
@@ -129,7 +133,7 @@ def fix_formatting(ctx):
 def fix_license(ctx):
     """Update LICENSE file and license preambles in source files."""
     ctx.run(
-        'scripts/licenser/licenser.py . --released={released} --author="{author}" -i "*.py" -i "*.rst"'
+        'scripts/licenser/licenser.py . --released={released} --author="{author}" -i "*.py" -i "*.rst" -e "*README.rst" -e "*CHANGELOG.rst" -e "*.git"'
         .format(released=pydio.__released__, author=pydio.__author__)
     )
 

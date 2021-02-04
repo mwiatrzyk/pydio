@@ -34,9 +34,7 @@ class Variant(collections.abc.Hashable):
 
     def __hash__(self):
         return hash(
-            frozenset(
-                itertools.chain([self._key], self._kwargs.items())
-            )
+            frozenset(itertools.chain([self._key], self._kwargs.items()))
         )
 
     def __eq__(self, other):

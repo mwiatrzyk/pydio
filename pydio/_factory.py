@@ -8,8 +8,8 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-import inspect
 import functools
+import inspect
 
 from . import _utils
 from .base import DEFAULT_ENV, DEFAULT_SCOPE, NULL, IFactory, IUnboundFactory
@@ -136,7 +136,14 @@ class InstanceFactory(IFactory):
 
 class GenericUnboundFactory(IUnboundFactory):
 
-    def __init__(self, factory_class, key, func, scope=DEFAULT_SCOPE, env=DEFAULT_ENV): # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        factory_class,
+        key,
+        func,
+        scope=DEFAULT_SCOPE,
+        env=DEFAULT_ENV
+    ):  # pylint: disable=too-many-arguments
         self._factory_class = factory_class
         self._key = key
         self._func = func

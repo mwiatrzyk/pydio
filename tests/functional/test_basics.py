@@ -44,7 +44,9 @@ class TestBasics:
     def test_injector_should_always_inject_same_instance(self, injector):
         assert injector.inject(IFoo) is injector.inject(IFoo)
 
-    def test_injector_should_raise_exception_if_invalid_key_was_given(self, injector):
+    def test_injector_should_raise_exception_if_invalid_key_was_given(
+        self, injector
+    ):
         with pytest.raises(Injector.NoProviderFoundError):
             injector.inject('dummy')
 

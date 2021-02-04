@@ -29,12 +29,12 @@ logging.basicConfig(
 
 _THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 _ROOT_DIR = os.path.join(_THIS_DIR, '..')
-_CHANGELOG_FILE_PATH = os.path.join(_ROOT_DIR, 'CHANGELOG.md')
-_SOURCES_PATH = os.path.join(_ROOT_DIR, 'mockify')
+_CHANGELOG_FILE_PATH = os.path.join(_ROOT_DIR, 'CHANGELOG.rst')
+_SOURCES_PATH = os.path.join(_ROOT_DIR, 'pydio')
 _DOCS_PATH = os.path.join(_ROOT_DIR, 'docs')
 _INIT_FILE_PATH = os.path.join(_SOURCES_PATH, '__init__.py')
 _NOW = datetime.now()
-_TAG_RE = re.compile(r'^v?\d+\.\d+\.\d+$')
+_TAG_RE = re.compile(r'^v?\d+\.\d+\.\d+(rc[0-9]+)?$')
 _LIBRARY_VERSION_RE = re.compile(r"__version__\s+=\s+'(\d+\.\d+\.\d+)'")
 _CHANGELOG_TAG_RE = re.compile(
     r'(\(unreleased\))|((\d+\.\d+\.\d+)\s+\((\d+-\d+-\d+)\))',
@@ -194,7 +194,7 @@ def check(args):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description='A tool for updating tag info in Mockify'
+        description='A tool for updating tag info in PyDio'
     )
     parser.add_argument(
         'tag_or_version',

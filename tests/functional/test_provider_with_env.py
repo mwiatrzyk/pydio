@@ -61,17 +61,22 @@ class TestProviderWithEnv:
 
     def test_testing_injector_will_inject_using_testing_factory(self, testing):
         mock = testing.inject('mock')
-        mock.make_testing_foo.expect_call(IFoo, env='testing').will_once(Return(42))
+        mock.make_testing_foo.expect_call(IFoo,
+                                          env='testing').will_once(Return(42))
         assert testing.inject(IFoo) == 42
 
-    def test_production_injector_will_inject_using_production_factory(self, production):
+    def test_production_injector_will_inject_using_production_factory(
+        self, production
+    ):
         mock = production.inject('mock')
         mock.make_production_foo.expect_call(IFoo, env='production').will_once(
             Return(42)
         )
         assert production.inject(IFoo) == 42
 
-    def test_injector_with_non_existing_env_will_fall_back_to_default_factory(self):
+    def test_injector_with_non_existing_env_will_fall_back_to_default_factory(
+        self
+    ):
         injector = Injector(provider, env='not_existing')
         mock = injector.inject('mock')
         mock.make_default_foo.expect_call(IFoo).will_once(Return(42))

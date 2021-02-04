@@ -63,7 +63,9 @@ class TestScopedInjector:
         with pytest.raises(Injector.OutOfScopeError) as excinfo:
             injector.inject(IBar)
 
-    def test_scoped_injectors_should_inject_objects_with_matching_scope(self, injector):
+    def test_scoped_injectors_should_inject_objects_with_matching_scope(
+        self, injector
+    ):
         sc1 = injector.scoped('sc1')
         sc2 = injector.scoped('sc2')
         assert isinstance(sc1.inject(IBar), Bar)
@@ -75,12 +77,16 @@ class TestScopedInjector:
         sc1 = injector.scoped('sc1')
         assert isinstance(sc1.inject(IFoo), Foo)
 
-    def test_scoped_injector_cannot_inject_objects_from_side_scope(self, injector):
+    def test_scoped_injector_cannot_inject_objects_from_side_scope(
+        self, injector
+    ):
         sc1 = injector.scoped('sc1')
         with pytest.raises(Injector.OutOfScopeError):
             sc1.inject('baz')
 
-    def test_scoped_injector_can_inject_objects_from_any_parent_scopes(self, injector):
+    def test_scoped_injector_can_inject_objects_from_any_parent_scopes(
+        self, injector
+    ):
         sc2 = injector.scoped('sc2')
         sc21 = sc2.scoped('sc21')
         assert isinstance(sc21.inject(IFoo), Foo)

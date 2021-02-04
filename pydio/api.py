@@ -13,5 +13,7 @@ from .provider import Provider
 from .variant import Variant
 
 __all__ = [
-    'Injector', 'Provider', 'Variant',
+    'Injector',
+    'Provider',
+    'Variant',
 ]
