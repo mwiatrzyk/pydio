@@ -13,7 +13,25 @@ A simple and functional dependency injection toolkit for Python.
 About
 =====
 
-TBD
+Dependency injection in Python is basically map lookup; you need **a key**
+that will point you to either **an object** to be injected or **an object factory**
+to be used to create object to be injected.
+
+PyDio is designed to follow that simple assumption: it uses **providers**
+that are sort of key-to-factory maps, and **injectors** that are used by
+application to search for a factory to use.
+
+Key features:
+
+* Support for any hashable keys: classes, strings, ints etc.
+* Support for any type of object factories: function, coroutine, generator,
+  asynchronous generator.
+* Automatic resource management via generator-based factories
+  (similar to pytest's fixtures)
+* Multiple environment support: testing, development, production etc.
+* Limiting created object's lifetime to custom-defined scopes: global,
+  application, use-case etc.
+* No singletons used == no global state.
 
 Installation
 ============
@@ -27,8 +45,6 @@ You can install PyDio using one of following methods:
 2) From test PyPI (official + development releases)::
 
     $ pip install -i https://test.pypi.org/simple/ PyDio
-
-    This is where you will find development versions.
 
 3) Directly from source code repository (for not yet released versions)::
 
