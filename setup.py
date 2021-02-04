@@ -31,7 +31,7 @@ def version_scheme(version):
 def local_scheme(version):
     if not version.distance:
         return ''
-    return "+{}".format(version.distance)
+    return ".dev{}".format(version.distance)
 
 
 setuptools.setup(
