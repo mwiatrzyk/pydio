@@ -2,7 +2,6 @@
 .. image:: https://img.shields.io/pypi/l/PyDio   :alt: PyPI - License
 .. image:: https://img.shields.io/pypi/dm/PyDio   :alt: PyPI - Downloads
 .. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
-:target: https://codecov.io/gl/zef1r/pydio
 
 =====
 PyDio
