@@ -35,7 +35,9 @@ _DOCS_PATH = os.path.join(_ROOT_DIR, 'docs')
 _INIT_FILE_PATH = os.path.join(_SOURCES_PATH, '__init__.py')
 _NOW = datetime.now()
 _TAG_RE = re.compile(r'^v?\d+\.\d+\.\d+(rc[0-9]+)?$')
-_LIBRARY_VERSION_RE = re.compile(r"__version__\s+=\s+'(\d+\.\d+\.\d+)'")
+_LIBRARY_VERSION_RE = re.compile(
+    r"__version__\s+=\s+'(\d+\.\d+\.\d+(rc[0-9]+)?)'"
+)
 _CHANGELOG_TAG_RE = re.compile(
     r'(\(unreleased\))|((\d+\.\d+\.\d+(rc[0-9]+)?)\s+\((\d+-\d+-\d+)\))',
     flags=re.IGNORECASE
