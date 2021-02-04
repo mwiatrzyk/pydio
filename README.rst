@@ -55,6 +55,8 @@ Quickstart
 
 TBD
 
+In the meantime, you can read functional tests: https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional
+
 License
 =======
 
