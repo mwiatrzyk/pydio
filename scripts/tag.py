@@ -37,7 +37,7 @@ _NOW = datetime.now()
 _TAG_RE = re.compile(r'^v?\d+\.\d+\.\d+(rc[0-9]+)?$')
 _LIBRARY_VERSION_RE = re.compile(r"__version__\s+=\s+'(\d+\.\d+\.\d+)'")
 _CHANGELOG_TAG_RE = re.compile(
-    r'(\(unreleased\))|((\d+\.\d+\.\d+)\s+\((\d+-\d+-\d+)\))',
+    r'(\(unreleased\))|((\d+\.\d+\.\d+(rc[0-9]+)?)\s+\((\d+-\d+-\d+)\))',
     flags=re.IGNORECASE
 )
 _SPHINX_ADDED_CHANGED_RE = re.compile(
@@ -136,7 +136,7 @@ def check(args):
         if version == '(unreleased)':
             return version, _NOW
         match = _CHANGELOG_TAG_RE.search(version)
-        return match.group(3), datetime.strptime(match.group(4), '%Y-%m-%d')
+        return match.group(3), datetime.strptime(match.group(5), '%Y-%m-%d')
 
     def check_changelog(version):
         with open(_CHANGELOG_FILE_PATH) as fd:
