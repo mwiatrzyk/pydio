@@ -1,5 +1,5 @@
-0.1.0rc2 (2021-02-04)
----------------------
+v0.1.0rc2 (2021-02-04)
+----------------------
 
 * Add ``CHANGELOG.rst`` file
 * Add missing ``__version__`` attribute to ``pydio.__init__.py``
