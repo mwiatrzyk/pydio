@@ -1,6 +1,6 @@
-.. image:: https://img.shields.io/pypi/v/PyDio   :alt: PyPI
-.. image:: https://img.shields.io/pypi/l/PyDio   :alt: PyPI - License
-.. image:: https://img.shields.io/pypi/dm/PyDio   :alt: PyPI - Downloads
+.. image:: https://img.shields.io/pypi/v/PyDio
+.. image:: https://img.shields.io/pypi/l/PyDio
+.. image:: https://img.shields.io/pypi/dm/PyDio
 .. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
 :target: https://codecov.io/gl/zef1r/pydio
 
@@ -13,11 +13,11 @@ A simple and functional dependency injection toolkit for Python.
 About
 =====
 
-PyDio aims to be as simple as possible, yet still powerful, allowing you to
-feed dependencies inside your application in a flexible way. PyDio design is
-based on simple assumption, that dependency injection can be achieved using
-simple **key-to-function** map, where **key** specifies **type of object**
-you want to inject and **function** is a **factory** function that creates
+PyDio aims to be simple, yet still powerful, allowing you to feed
+dependencies inside your application in a flexible way. PyDio design is based
+on simple assumption, that dependency injection can be achieved using simple
+**key-to-function** map, where **key** specifies **type of object** you want
+to inject and **function** is a **factory** function that creates
 **instances** of that type.
 
 In PyDio, this is implemented using **providers** and **injectors**. You use
