@@ -85,7 +85,7 @@ Documentation
 
 You have two options available:
 
-1) Visit PyDio's `ReadTheDocs site <https://pydio.readthedocs.io/en/latest/>`_
+1) Visit `PyDio's ReadTheDocs <https://pydio.readthedocs.io/en/latest/>`_ site
 
 2) Take a tour around `functional tests <https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional>`_
 
