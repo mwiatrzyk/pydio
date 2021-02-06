@@ -1,3 +1,9 @@
+(unreleased)
+------------
+
+* Add missing support for async context manager in
+  :class:`pydio.injector.Injector` class
+
 0.1.0rc3 (2021-02-04)
 ---------------------
 

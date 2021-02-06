@@ -23,9 +23,21 @@ DEFAULT_ENV = _utils.Constant('DEFAULT_ENV')
 DEFAULT_SCOPE = _utils.Constant('DEFAULT_SCOPE')
 
 
-class IInjector(contextlib.AbstractContextManager):
+class IInjector(
+    contextlib.AbstractContextManager, contextlib.AbstractAsyncContextManager
+):
+    """Base class for injectors.
+
+    Injectors are used in application code to create and inject objects into
+    the application. They use :class:`IProvider` objects.
+    """
 
     class NoProviderFoundError(exc.InjectorError):
+        """Raised when there was no matching provider found for given ``key``.
+
+        :param key:
+            The key passed to injector's :meth:`IInjector.inject` method
+        """
         message_template = "No provider found for key: {self.key!r}"
 
         @property
@@ -33,6 +45,18 @@ class IInjector(contextlib.AbstractContextManager):
             return self.params['key']
 
     class OutOfScopeError(exc.InjectorError):
+        """Raised if injector is not able to use factory that has been marked
+        as available from different scope.
+
+        :param key:
+            The key passed to injector's :meth:`IInjector.inject` method
+
+        :param expected_scope:
+            The scope that is expected
+
+        :param given_scope:
+            The scope assigned to injector that raised this exception
+        """
         message_template =\
             "Cannot inject {self.key!r} due to scope mismatch: "\
             "{self.expected_scope!r} (expected) != {self.given_scope!r} (given)"
