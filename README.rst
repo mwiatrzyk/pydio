@@ -13,25 +13,52 @@ A simple and functional dependency injection toolkit for Python.
 About
 =====
 
-Dependency injection in Python is basically map lookup; you need **a key**
-that will point you to either **an object** to be injected or **an object factory**
-to be used to create object to be injected.
+PyDio aims to be as simple as possible, yet still powerful, allowing you to
+feed dependencies inside your application in a flexible way. PyDio design is
+based on simple assumption, that dependency injection can be achieved using
+simple **key-to-function** map, where **key** specifies **type of object**
+you want to inject and **function** is a **factory** function that creates
+**instances** of that type.
 
-PyDio is designed to follow that simple assumption: it uses **providers**
-that are sort of key-to-factory maps, and **injectors** that are used by
-application to search for a factory to use.
+In PyDio, this is implemented using **providers** and **injectors**. You use
+providers to configure your **key-to-function** mapping, and then you use
+injectors to perform a **lookup** of a specific key and creation of the final
+object.
 
-Key features:
+Here's a simple example::
 
-* Support for any hashable keys: classes, strings, ints etc.
+    import abc
+
+    from pydio.api import Provider, Injector
+
+    provider = Provider()
+
+    @provider.provides('greet')
+    def make_greet():
+        return 'Hello, world!'
+
+    def main():
+        injector = Injector(provider)
+        greet_message = injector.inject('greet')
+        print(greet_message)
+
+And if you now call ``main()`` function, then the output will be following::
+
+    Hello, world!
+
+Key features
+============
+
+* Support for any hashable keys: class objects, strings, ints etc.
 * Support for any type of object factories: function, coroutine, generator,
   asynchronous generator.
 * Automatic resource management via generator-based factories
   (similar to pytest's fixtures)
 * Multiple environment support: testing, development, production etc.
-* Limiting created object's lifetime to custom-defined scopes: global,
+* Limiting created object's lifetime to user-defined scopes: global,
   application, use-case etc.
-* No singletons used == no global state.
+* No singletons used, so there is no global state...
+* ...but you still can create global injector on your own if you need it :-)
 
 Installation
 ============
