@@ -77,12 +77,14 @@ You can install PyDio using one of following methods:
 
     $ pip install git+https://gitlab.com/zef1r/PyDio.git@[branch-or-tag]
 
-Quickstart
-==========
+Documentation
+=============
 
-TBD
+You have two options available:
 
-In the meantime, you can read functional tests: https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional
+1) Visit PyDio's ReadTheDocs site: https://pydio.readthedocs.io/en/latest/
+
+2) Take a tour around functional tests: https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional
 
 License
 =======
