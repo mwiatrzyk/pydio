@@ -87,3 +87,4 @@ User's Guide
 
     installation
     changelog
+    license
