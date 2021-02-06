@@ -23,7 +23,9 @@ DEFAULT_ENV = _utils.Constant('DEFAULT_ENV')
 DEFAULT_SCOPE = _utils.Constant('DEFAULT_SCOPE')
 
 
-class IInjector(contextlib.AbstractContextManager):
+class IInjector(
+    contextlib.AbstractContextManager, contextlib.AbstractAsyncContextManager
+):
 
     class NoProviderFoundError(exc.InjectorError):
         message_template = "No provider found for key: {self.key!r}"

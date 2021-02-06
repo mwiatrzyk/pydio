@@ -60,7 +60,7 @@ class TestScopedInjector:
 
     def test_root_injector_cannot_inject_scoped_providers(self, injector):
         assert isinstance(injector.inject(IFoo), Foo)
-        with pytest.raises(Injector.OutOfScopeError) as excinfo:
+        with pytest.raises(Injector.OutOfScopeError):
             injector.inject(IBar)
 
     def test_scoped_injectors_should_inject_objects_with_matching_scope(

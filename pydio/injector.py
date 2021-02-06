@@ -8,6 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import inspect
 import weakref
 from typing import Hashable
 
@@ -27,6 +28,11 @@ class Injector(IInjector):
 
     def __exit__(self, *args):
         self.close()
+
+    async def __aexit__(self, *args):
+        maybe_coroutine = self.close()
+        if inspect.iscoroutine(maybe_coroutine):
+            await maybe_coroutine
 
     @property
     def _parent(self):
