@@ -14,9 +14,13 @@ Welcome to PyDio's documentation!
 =================================
 
 .. image:: https://img.shields.io/pypi/v/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://img.shields.io/pypi/l/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://img.shields.io/pypi/dm/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
+    :target: https://codecov.io/gl/zef1r/pydio
 
 About PyDio
 -----------

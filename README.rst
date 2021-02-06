@@ -1,8 +1,11 @@
 .. image:: https://img.shields.io/pypi/v/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://img.shields.io/pypi/l/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://img.shields.io/pypi/dm/PyDio
+    :target: https://pypi.org/project/PyDio/
 .. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
-:target: https://codecov.io/gl/zef1r/pydio
+    :target: https://codecov.io/gl/zef1r/pydio
 
 =====
 PyDio
@@ -91,7 +94,7 @@ License
 
 This project is released under the terms of the MIT license.
 
-See ``LICENSE.txt`` for more details.
+See https://gitlab.com/zef1r/pydio/-/blob/master/LICENSE.txt for more details.
 
 Author
 ======
