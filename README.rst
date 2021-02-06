@@ -85,16 +85,16 @@ Documentation
 
 You have two options available:
 
-1) Visit PyDio's ReadTheDocs site: https://pydio.readthedocs.io/en/latest/
+1) Visit PyDio's `ReadTheDocs site<https://pydio.readthedocs.io/en/latest/>`_
 
-2) Take a tour around functional tests: https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional
+2) Take a tour around `functional tests<https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional>`_
 
 License
 =======
 
 This project is released under the terms of the MIT license.
 
-See https://gitlab.com/zef1r/pydio/-/blob/master/LICENSE.txt for more details.
+See `LICENSE.txt<https://gitlab.com/zef1r/pydio/-/blob/master/LICENSE.txt>`_ for more details.
 
 Author
 ======
