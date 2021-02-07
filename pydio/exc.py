@@ -16,9 +16,6 @@ class Base(Exception, abc.ABC):
 
     You can use this class to catch all exceptions that this library may
     raise.
-
-    This is an abstract base class; it requires :param:`message_template` to
-    be declared in subclass.
     """
 
     def __init__(self, **kwargs):
@@ -33,19 +30,29 @@ class Base(Exception, abc.ABC):
     def message_template(self) -> str:
         """Specify message template.
 
-        You can use ``self`` in template to access exception's properties.
+        This must be defined in subclass and provides template to render
+        exception message. This template can use **self** to access exception
+        data, for example::
+
+            class MyException(Base):
+                message_template = 'Failed: foo={self.foo!r}'
         """
 
     @property
     def params(self) -> dict:
-        """Dictionary containing exception parameters given in
-        constructor."""
+        """Dictionary containing all keyword args given in constructor.
+
+        In subclass, this can be used as source of data when adding another
+        properties.
+        """
         return self._params
 
 
 class InjectorError(Base):
-    pass
+    """Base class for exceptions that can be raised by
+    :class:`pydio.base.IInjector` instances."""
 
 
 class ProviderError(Base):
-    pass
+    """Base class for exceptions that can be raised by
+    :class:`pydio.base.IProvider` instances."""
