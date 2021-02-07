@@ -9,3 +9,4 @@ API Reference
     api/exc
     api/injector
     api/provider
+    api/variant
