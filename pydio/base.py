@@ -27,7 +27,7 @@ depend on this base module, not on concrete implementation.
 """
 import abc
 import contextlib
-from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload, Awaitable
+from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload, Awaitable, Optional
 
 from . import _utils, exc
 
@@ -107,6 +107,10 @@ class IInjector(
         @property
         def given_scope(self) -> Hashable:
             return self.params['given_scope']
+
+    class AlreadyClosedError(exc.InjectorError):
+        """Raised when operation on a closed injector takes place."""
+        message_template = "This injector was already closed"
 
     @overload
     def inject(self, key: Type[T]) -> Union[T, Awaitable[T]]:
@@ -258,16 +262,14 @@ class IProvider(abc.ABC):
         def env(self) -> Hashable:
             return self.params['env']
 
-    GetResult = Union[IUnboundFactory, None]
-
     @overload
-    def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> GetResult:
+    def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> Optional[IUnboundFactory]:
         pass
 
     @overload
     def get(
         self, key: Hashable, env: Hashable = DEFAULT_ENV
-    ) -> GetResult:
+    ) -> Optional[IUnboundFactory]:
         pass
 
     @abc.abstractmethod

@@ -43,10 +43,6 @@ class Base(Exception, abc.ABC):
         return self._params
 
 
-class AlreadyClosedError(Base):
-    message_template = "Underlying factory was already closed"
-
-
 class InjectorError(Base):
     pass
 

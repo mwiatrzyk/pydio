@@ -10,7 +10,6 @@
 # ---------------------------------------------------------------------------
 import pytest
 
-from pydio import exc
 from pydio.api import Injector, Provider
 from tests.stubs import Bar, Baz, Foo, IBar, IFoo
 
@@ -58,5 +57,5 @@ class TestBasics:
 
     def test_injector_can_no_longer_be_used_after_close(self, injector):
         injector.close()
-        with pytest.raises(exc.AlreadyClosedError):
+        with pytest.raises(Injector.AlreadyClosedError):
             injector.inject(IFoo)

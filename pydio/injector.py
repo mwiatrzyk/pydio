@@ -46,7 +46,7 @@ class Injector(IInjector):
 
     def inject(self, key):
         if self._provider is None:
-            raise exc.AlreadyClosedError()
+            raise self.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
         unbound_instance = self._provider.get(key, self._env)
