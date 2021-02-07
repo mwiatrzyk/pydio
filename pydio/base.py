@@ -13,13 +13,13 @@
 This was made to make use of annotations easier, as all implementations
 depend on this base module, not on concrete implementation.
 
-.. data:: DEFAULT_ENV
+.. data:: None
 
     Default value for env.
 
     This is used if no user-defined environment was assigned.
 
-.. data:: DEFAULT_SCOPE
+.. data:: None
 
     Default value for scope.
 
@@ -29,17 +29,9 @@ import abc
 import contextlib
 from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload, Awaitable, Optional
 
-from . import _utils, exc
+from . import exc
 
 T, U = TypeVar('T'), TypeVar('U')
-
-CloseResult = Union[None, Awaitable[None]]
-
-NULL = _utils.Constant('NULL')
-
-DEFAULT_ENV = _utils.Constant('DEFAULT_ENV')
-
-DEFAULT_SCOPE = _utils.Constant('DEFAULT_SCOPE')
 
 
 class IInjector(
@@ -162,7 +154,7 @@ class IInjector(
         """
 
     @abc.abstractmethod
-    def close(self) -> CloseResult:
+    def close(self) -> Optional[Awaitable[None]]:
         """Close this injector.
 
         When this is called, all objects created by this injector are also
@@ -191,7 +183,7 @@ class IFactory(abc.ABC):
     @abc.abstractmethod
     def get_instance(
         self
-    ) -> Union[T, U]:  # TODO: Union[T, U, NULL] (fails on NULL currently)
+    ) -> Union[T, U]:  # TODO: Union[T, U, None] (fails on None currently)
         """Return underlying object.
 
         This is singleton factory of target object; on the first call, the
@@ -200,7 +192,7 @@ class IFactory(abc.ABC):
         """
 
     @abc.abstractmethod
-    def close(self) -> CloseResult:
+    def close(self) -> Optional[Awaitable[None]]:
         """Close this factory.
 
         This must return awaitable if :meth:`is_awaitable` returns True.
@@ -222,7 +214,7 @@ class IUnboundFactory(abc.ABC):
         """Return user-defined scope for this factory.
 
         This is set by the user during registration. If no scope was given,
-        this defaults to :attr:`DEFAULT_SCOPE` constant. Unbound factory can
+        this defaults to :attr:`None` constant. Unbound factory can
         only be used by injector with matching scope.
         """
 
@@ -263,17 +255,17 @@ class IProvider(abc.ABC):
             return self.params['env']
 
     @overload
-    def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> Optional[IUnboundFactory]:
+    def get(self, key: Type[T], env: Hashable = None) -> Optional[IUnboundFactory]:
         pass
 
     @overload
     def get(
-        self, key: Hashable, env: Hashable = DEFAULT_ENV
+        self, key: Hashable, env: Hashable = None
     ) -> Optional[IUnboundFactory]:
         pass
 
     @abc.abstractmethod
-    def get(self, key, env=DEFAULT_ENV):
+    def get(self, key, env=None):
         """Get :class:`IUnboundFactory` registered for given key and env.
 
         If no factory was found, then return ``None``.
@@ -290,8 +282,8 @@ class IProvider(abc.ABC):
         self,
         key: Hashable,
         func: Callable,
-        scope: Hashable = DEFAULT_SCOPE,
-        env: Hashable = DEFAULT_ENV
+        scope: Hashable = None,
+        env: Hashable = None
     ):
         """Register given user-defined function as a factory.
 
@@ -321,8 +313,8 @@ class IProvider(abc.ABC):
         self,
         key: Hashable,
         value: Any,
-        scope: Hashable = DEFAULT_SCOPE,
-        env: Hashable = DEFAULT_ENV
+        scope: Hashable = None,
+        env: Hashable = None
     ):
         """Register given user-defined instance.
 

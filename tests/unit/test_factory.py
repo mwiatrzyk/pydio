@@ -14,7 +14,6 @@ from mockify.core import satisfied
 from mockify.mock import Mock
 
 from pydio import _factory as factory
-from pydio import base
 
 
 class TestGeneratorFactory:
@@ -48,9 +47,9 @@ class TestGeneratorFactory:
         with satisfied(connection):
             self.uut.close()
 
-    def test_get_instance_returns_null_if_called_after_close(self):
+    def test_get_instance_returns_none_if_called_after_close(self):
         self.uut.close()
-        assert self.uut.get_instance() is base.NULL
+        assert self.uut.get_instance() is None
 
 
 class TestAsyncGeneratorFactory:
@@ -89,9 +88,9 @@ class TestAsyncGeneratorFactory:
             await self.uut.close()
 
     @pytest.mark.asyncio
-    async def test_get_instance_returns_null_if_called_after_close(self):
+    async def test_get_instance_returns_none_if_called_after_close(self):
         await self.uut.close()
-        assert await self.uut.get_instance() is base.NULL
+        assert await self.uut.get_instance() is None
 
 
 class TestCoroutineFactory:
@@ -114,9 +113,9 @@ class TestCoroutineFactory:
         assert first == [42]
 
     @pytest.mark.asyncio
-    async def test_get_instance_returns_null_after_close(self):
+    async def test_get_instance_returns_none_after_close(self):
         await self.uut.close()
-        assert await self.uut.get_instance() is base.NULL
+        assert await self.uut.get_instance() is None
 
 
 class TestFunctionFactory:
@@ -137,9 +136,9 @@ class TestFunctionFactory:
         assert first is second
         assert first == [42]
 
-    def test_get_instance_returns_null_after_close(self):
+    def test_get_instance_returns_none_after_close(self):
         self.uut.close()
-        assert self.uut.get_instance() is base.NULL
+        assert self.uut.get_instance() is None
 
 
 class TestInstanceFactory:
@@ -155,6 +154,6 @@ class TestInstanceFactory:
         assert self.uut.get_instance() is self.uut.get_instance()
         assert self.uut.get_instance() == [42]
 
-    def test_get_instance_returns_null_after_close(self):
+    def test_get_instance_returns_none_after_close(self):
         self.uut.close()
-        assert self.uut.get_instance() is base.NULL
+        assert self.uut.get_instance() is None

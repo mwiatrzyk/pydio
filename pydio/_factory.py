@@ -11,10 +11,9 @@
 import functools
 import inspect
 
-from . import _utils
-from .base import DEFAULT_ENV, DEFAULT_SCOPE, NULL, IFactory, IUnboundFactory
+from .base import IFactory, IUnboundFactory
 
-_UNDEFINED = _utils.Constant('_UNDEFINED')
+_UNDEFINED = object()
 
 
 class GeneratorFactory(IFactory):
@@ -34,7 +33,7 @@ class GeneratorFactory(IFactory):
 
     def close(self):
         prev_instance = self._instance
-        self._instance = NULL
+        self._instance = None
         if prev_instance is not _UNDEFINED:
             try:
                 next(self._generator)
@@ -65,7 +64,7 @@ class AsyncGeneratorFactory(IFactory):
 
         async def async_close():
             prev_instance = self._instance
-            self._instance = NULL
+            self._instance = None
             if prev_instance is not _UNDEFINED:
                 try:
                     await self._generator.__anext__()
@@ -97,7 +96,7 @@ class CoroutineFactory(IFactory):
     def close(self):
 
         async def async_close():
-            self._instance = NULL
+            self._instance = None
 
         return async_close()
 
@@ -115,7 +114,7 @@ class FunctionFactory(IFactory):
         return self._instance
 
     def close(self):
-        self._instance = NULL
+        self._instance = None
 
 
 class InstanceFactory(IFactory):
@@ -131,7 +130,7 @@ class InstanceFactory(IFactory):
         return self._value
 
     def close(self):
-        self._value = NULL
+        self._value = None
 
 
 class GenericUnboundFactory(IUnboundFactory):
@@ -141,8 +140,8 @@ class GenericUnboundFactory(IUnboundFactory):
         factory_class,
         key,
         func,
-        scope=DEFAULT_SCOPE,
-        env=DEFAULT_ENV
+        scope=None,
+        env=None
     ):  # pylint: disable=too-many-arguments
         self._factory_class = factory_class
         self._key = key
@@ -178,7 +177,7 @@ class GenericUnboundFactory(IUnboundFactory):
 
 class UnboundInstanceFactory(IUnboundFactory):
 
-    def __init__(self, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+    def __init__(self, value, scope=None, env=None):
         self._value = value
         self._scope = scope
         self._env = env

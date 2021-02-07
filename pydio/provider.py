@@ -11,7 +11,7 @@
 import inspect
 
 from . import _factory
-from .base import DEFAULT_ENV, DEFAULT_SCOPE, IProvider
+from .base import IProvider
 
 
 class Provider(IProvider):
@@ -29,11 +29,11 @@ class Provider(IProvider):
             for unbound_factory in envs.values():
                 yield unbound_factory
 
-    def get(self, key, env=DEFAULT_ENV):
+    def get(self, key, env=None):
         envs = self._unbound_factories.get(key, {})
         found = envs.get(env)
-        if found is None and env != DEFAULT_ENV:
-            return envs.get(DEFAULT_ENV)
+        if found is None and env != None:
+            return envs.get(None)
         return found
 
     def has_awaitables(self):
@@ -48,14 +48,14 @@ class Provider(IProvider):
                 self._unbound_factories.setdefault(key,
                                                    {})[env] = unbound_factory
 
-    def register_func(self, key, func, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+    def register_func(self, key, func, scope=None, env=None):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
             _factory.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope, env=env)
 
     def register_instance(
-        self, key, value, scope=DEFAULT_SCOPE, env=DEFAULT_ENV
+        self, key, value, scope=None, env=None
     ):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
@@ -71,7 +71,7 @@ class Provider(IProvider):
             return _factory.GeneratorFactory
         return _factory.FunctionFactory
 
-    def provides(self, key, scope=DEFAULT_SCOPE, env=DEFAULT_ENV):
+    def provides(self, key, scope=None, env=None):
 
         def decorator(func):
             self.register_func(key, func, scope=scope, env=env)

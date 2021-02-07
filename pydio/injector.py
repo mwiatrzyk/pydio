@@ -13,16 +13,16 @@ import weakref
 from typing import Hashable
 
 from . import exc
-from .base import DEFAULT_ENV, DEFAULT_SCOPE, IInjector, IProvider
+from .base import IInjector, IProvider
 
 
 class Injector(IInjector):
 
-    def __init__(self, provider: IProvider, env: Hashable = DEFAULT_ENV):
+    def __init__(self, provider: IProvider, env: Hashable = None):
         self._provider = provider
         self._env = env
         self._cache = {}
-        self._scope = DEFAULT_SCOPE
+        self._scope = None
         self._children = []
         self.__parent = None
 
