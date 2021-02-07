@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 import inspect
 
-from . import _factory
+from . import _factories
 from .base import IProvider
 
 
@@ -51,7 +51,7 @@ class Provider(IProvider):
     def register_func(self, key, func, scope=None, env=None):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
-            _factory.GenericUnboundFactory(
+            _factories.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope, env=env)
 
     def register_instance(
@@ -59,17 +59,17 @@ class Provider(IProvider):
     ):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
-            _factory.UnboundInstanceFactory(value, scope=scope, env=env)
+            _factories.UnboundInstanceFactory(value, scope=scope, env=env)
 
     @staticmethod
     def __get_factory_class_for(func):
         if inspect.isasyncgenfunction(func):
-            return _factory.AsyncGeneratorFactory
+            return _factories.AsyncGeneratorFactory
         if inspect.iscoroutinefunction(func):
-            return _factory.CoroutineFactory
+            return _factories.CoroutineFactory
         if inspect.isgeneratorfunction(func):
-            return _factory.GeneratorFactory
-        return _factory.FunctionFactory
+            return _factories.GeneratorFactory
+        return _factories.FunctionFactory
 
     def provides(self, key, scope=None, env=None):
 

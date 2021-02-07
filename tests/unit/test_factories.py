@@ -13,14 +13,14 @@ from mockify.actions import Return
 from mockify.core import satisfied
 from mockify.mock import Mock
 
-from pydio import _factory as factory
+from pydio import _factories as factories
 
 
 class TestGeneratorFactory:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.uut = factory.GeneratorFactory(self.make_connection)
+        self.uut = factories.GeneratorFactory(self.make_connection)
         self.database = Mock('database')
 
     def make_connection(self):
@@ -56,7 +56,7 @@ class TestAsyncGeneratorFactory:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.uut = factory.AsyncGeneratorFactory(self.make_connection)
+        self.uut = factories.AsyncGeneratorFactory(self.make_connection)
         self.database = Mock('database')
 
     async def make_connection(self):
@@ -97,7 +97,7 @@ class TestCoroutineFactory:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.uut = factory.CoroutineFactory(self.make_dummy_object)
+        self.uut = factories.CoroutineFactory(self.make_dummy_object)
 
     async def make_dummy_object(self):
         return [42]
@@ -122,7 +122,7 @@ class TestFunctionFactory:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.uut = factory.FunctionFactory(self.make_dummy_object)
+        self.uut = factories.FunctionFactory(self.make_dummy_object)
 
     def make_dummy_object(self):
         return [42]
@@ -145,7 +145,7 @@ class TestInstanceFactory:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.uut = factory.InstanceFactory([42])
+        self.uut = factories.InstanceFactory([42])
 
     def test_instance_factory_is_not_awaitable(self):
         assert not self.uut.is_awaitable()

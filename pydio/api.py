@@ -13,9 +13,9 @@
 Use this if you don't want to import directly from submodules or if you want
 to have single-line import statements inside your code.
 """
-from .injector import Injector
-from .provider import Provider
-from .variant import Variant
+from ._injector import Injector
+from ._provider import Provider
+from ._variant import Variant
 
 __all__ = [
     'Injector',

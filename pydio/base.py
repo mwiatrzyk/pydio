@@ -12,18 +12,6 @@
 
 This was made to make use of annotations easier, as all implementations
 depend on this base module, not on concrete implementation.
-
-.. data:: None
-
-    Default value for env.
-
-    This is used if no user-defined environment was assigned.
-
-.. data:: None
-
-    Default value for scope.
-
-    This is used if no user-defined scope was used.
 """
 import abc
 import contextlib

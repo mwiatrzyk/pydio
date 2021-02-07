@@ -13,7 +13,7 @@ from mockify.core import satisfied
 from mockify.mock import ABCMock
 
 from pydio.base import IInjector
-from pydio.provider import Provider
+from pydio.api import Provider
 
 
 class TestProvider:
