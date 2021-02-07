@@ -8,6 +8,8 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+"""Base exception classes for PyDio."""
+
 import abc
 
 

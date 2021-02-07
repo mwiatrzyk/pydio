@@ -14,6 +14,14 @@ from typing import Hashable
 
 
 class Variant(collections.abc.Hashable):
+    """A special form of key that can have user-defined parameters attached.
+
+    :param key:
+        The key to be wrapped
+
+    :param kwargs:
+        Named parameters to be attached
+    """
 
     def __init__(self, key: Hashable, **kwargs: Hashable):
         self._key = key
@@ -21,10 +29,12 @@ class Variant(collections.abc.Hashable):
 
     @property
     def key(self):
+        """Return wrapped key."""
         return self._key
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
+        """Return dict containing attached parameters."""
         return self._kwargs
 
     def __repr__(self):
