@@ -14,16 +14,16 @@ from pydio.base import IInjector, IProvider
 class TestIInjectorErrors:
 
     def test_no_provider_found_error(self):
-        uut = IInjector.NoProviderFoundError(key='spam')
-        assert str(uut) == "No provider found for key: 'spam'"
+        uut = IInjector.NoProviderFoundError(key='spam', env='testing')
+        assert str(uut) == "No provider found for: key='spam', env='testing'"
 
     def test_out_of_scope_error(self):
         uut = IInjector.OutOfScopeError(
-            key='foo', expected_scope='sc1', given_scope='sc2'
+            key='foo', scope='first', required_scope='second'
         )
         assert str(
             uut
-        ) == "Cannot inject 'foo' due to scope mismatch: 'sc1' (expected) != 'sc2' (given)"
+        ) == "Cannot inject 'foo' due to scope mismatch: 'second' (required) != 'first' (owned)"
 
 
 class TestIProviderErrors:

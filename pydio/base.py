@@ -8,11 +8,8 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-"""Abstract base classes for PyDio library.
+"""Base types for PyDio library."""
 
-This was made to make use of annotations easier, as all implementations
-depend on this base module, not on concrete implementation.
-"""
 import abc
 import contextlib
 from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload, Awaitable, Optional
@@ -25,72 +22,78 @@ T, U = TypeVar('T'), TypeVar('U')
 class IInjector(
     contextlib.AbstractContextManager, contextlib.AbstractAsyncContextManager
 ):
-    """Base class for injectors.
-
-    Injectors are used in application code to create and inject objects into
-    the application. Additionally, injectors are owners of created objects,
-    so the object lives for as long, as the injector does.
-
-    Injectors are both async and non-async context managers and can be used
-    along with ``with`` statement::
-
-        with injector:
-            return run_app(injector)
-
-    Or with ``async with`` statement::
-
-        async with injector:
-            return await run_app(injector)
-
-    When injector goes out of context, then :meth:`close` is called to free
-    any allocated resources. Injector can no longer be used once it was
-    closed.
-    """
+    """Base class for injectors."""
 
     class NoProviderFoundError(exc.InjectorError):
-        """Raised when there was no matching provider found for given :attr:`key`.
+        """Raised when there was no matching provider found for given key.
 
         :param key:
-            The key passed to injector's :meth:`IInjector.inject` method
+            Searched key
+
+        :param env:
+            Searched environment
         """
-        message_template = "No provider found for key: {self.key!r}"
+        message_template = "No provider found for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
 
         @property
         def key(self) -> Hashable:
             return self.params['key']
 
+        @property
+        def env(self) -> Hashable:
+            return self.params['env']
+
     class OutOfScopeError(exc.InjectorError):
-        """Raised if injector is not able to use factory that has been marked
-        as available from different scope.
+        """Raised when there was attempt to create object that was registered
+        for different scope.
 
         :param key:
-            The key passed to injector's :meth:`IInjector.inject` method
+            Searched key
 
-        :param expected_scope:
-            The scope that is expected
+        :param scope:
+            Injector's own scope
 
-        :param given_scope:
-            The scope assigned to injector that raised this exception
+        :param required_scope:
+            Required scope
         """
         message_template =\
             "Cannot inject {self.key!r} due to scope mismatch: "\
-            "{self.expected_scope!r} (expected) != {self.given_scope!r} (given)"
+            "{self.required_scope!r} (required) != {self.scope!r} (owned)"
+
+        def __init__(self, key, scope, required_scope):
+            super().__init__(key=key, scope=scope, required_scope=required_scope)
 
         @property
         def key(self) -> Hashable:
             return self.params['key']
 
         @property
-        def expected_scope(self) -> Hashable:
-            return self.params['expected_scope']
+        def scope(self) -> Hashable:
+            return self.params['scope']
 
         @property
-        def given_scope(self) -> Hashable:
-            return self.params['given_scope']
+        def required_scope(self) -> Hashable:
+            return self.params['required_scope']
 
     class AlreadyClosedError(exc.InjectorError):
-        """Raised when operation on a closed injector takes place."""
+        """Raised when operation on a closed injector was performed."""
         message_template = "This injector was already closed"
+
+    @property
+    @abc.abstractmethod
+    def env(self) -> Optional[Hashable]:
+        """Return environment assigned to this injector."""
+
+    @property
+    @abc.abstractmethod
+    def scope(self) -> Optional[Hashable]:
+        """Return scope assigned to this injector.
+
+        For root injector this will be ``None``.
+        """
 
     @overload
     def inject(self, key: Type[T]) -> Union[T, Awaitable[T]]:
@@ -104,62 +107,57 @@ class IInjector(
     def inject(self, key):
         """Inject object for given key.
 
-        When called for the first time, then it performs a lookup to find
-        matching factory (using API provided by :class:`IProvider`), and then
-        uses it to create object. When called for the second time, then it
-        returns already created object.
+        On success, this returns object created by matching factory. On
+        failure (f.e. when there was no provider found for given key, or when
+        injector was already closed) this method raises
+        :exc:`pydio.exc.InjectorError` exception.
 
         :param key:
-            The key to be used.
-
-            This key must match the one used during registration in
-            :class:`IProvider` object
+            Searched key
         """
 
     @abc.abstractmethod
     def scoped(self, scope: Hashable) -> 'IInjector':
         """Create and return a scoped injector.
 
-        Created injector will become a children of current one, it will be
-        able to use parent or grandparent to inject objects, but it will only
-        be able to manage lifetime of objects created by factories with same
-        scope. Thanks to this, it will be able to create injector
-        hierarchies, like in this example:
+        Scoped injectors can only create objects using factories with same
+        scope assigned. If no such factory was found, they can fall back to
+        ancestor - up to the root injector. Side scopes are not visible.
 
-            * **global** (living for as long as the Python process does)
-            * **class** (living for as long as some class does)
-            * **method** (created before method is executed, closed just after
-              method execution is done)
+        This can be used to limit object's lifetime to a particular scope,
+        say application or single action.
 
-        Of course it's up to the user how to use scopes and how to name them.
+        Scopes are completely user-defined.
 
         :param scope:
-            User-defined name of the scope.
-
-            To use full potential of scopes, you will have to additionally
-            use same scope when registering factory function in
-            :class:`IProvider` object.
+            User-defined scope name
         """
 
     @abc.abstractmethod
     def close(self) -> Optional[Awaitable[None]]:
         """Close this injector.
 
-        When this is called, all objects created by this injector are also
-        closed, and all children injectors (if any) are closed as well.
-        Injector can no longer be used after close.
+        This effectively calls :meth:`IFactory.close` for all factories
+        created by this injector.
 
-        If at least one coroutine- or async generator-based factory is used,
-        then this method will return a coroutine; you will have to await on
-        it to perform close operations asynchronously.
+        If there are children scoped injectors created from this one, they
+        are closed as well.
+
+        If at least one of provided object factories is awaitable, then this
+        method returns a coroutine that must be awaited to perform closing
+        operation.
+
+        When injector is used as context- or async context manager, this
+        method will automatically be closed when leaving context.
         """
 
 
 class IFactory(abc.ABC):
     """Base class for bound factories.
 
-    Objects of this class are owned by :class:`IInjector` objects, so once
-    owning injector is closed, the factory must also be closed.
+    These classes are responsible for actual creation of target objects.
+    Instances of this class are managed by :class:`IInjector` objects and are
+    produced by :meth:`IUnboundFactory.bind` method.
     """
 
     @staticmethod
@@ -172,19 +170,17 @@ class IFactory(abc.ABC):
     def get_instance(
         self
     ) -> Union[T, U]:  # TODO: Union[T, U, None] (fails on None currently)
-        """Return underlying object.
+        """Create and return target object.
 
-        This is singleton factory of target object; on the first call, the
-        object must be created. On subsequent calls same object must be
-        returned.
+        This object is later returned by :meth:`IInjector.inject` method.
         """
 
     @abc.abstractmethod
     def close(self) -> Optional[Awaitable[None]]:
         """Close this factory.
 
-        This must return awaitable if :meth:`is_awaitable` returns True.
-        Called by :meth:`IInjector.close` during injector shutdown.
+        If underlying object factory function is awaitable, then this must
+        return awaitable as well.
         """
 
 
@@ -203,7 +199,8 @@ class IUnboundFactory(abc.ABC):
 
         This is set by the user during registration. If no scope was given,
         this defaults to :attr:`None` constant. Unbound factory can
-        only be used by injector with matching scope.
+        only be used by injector with equal :attr:`IInjector.scope`
+        attribute.
         """
 
     @abc.abstractmethod
@@ -224,15 +221,19 @@ class IProvider(abc.ABC):
     """Base class for providers."""
 
     class DoubleRegistrationError(exc.ProviderError):
-        """Raised when same key was used twice.
+        """Raised when same ``(key, env)`` tuple was used twice during
+        registration.
 
         :param key:
-            Key that was used
+            Registered key
 
         :param env:
-            Environment that was used
+            Registered environment
         """
         message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
 
         @property
         def key(self) -> Hashable:
@@ -254,15 +255,16 @@ class IProvider(abc.ABC):
 
     @abc.abstractmethod
     def get(self, key, env=None):
-        """Get :class:`IUnboundFactory` registered for given key and env.
+        """Get :class:`IUnboundFactory` registered for given key and (if
+        given) environment.
 
         If no factory was found, then return ``None``.
 
         :param key:
-            Key to be used
+            Searched key
 
         :param env:
-            Environment to be used
+            Searched environment
         """
 
     @abc.abstractmethod
@@ -288,12 +290,17 @@ class IProvider(abc.ABC):
             The scope for this factory.
 
             If this is given, registered factory will only be available to
-            injectors with same scope.
+            injectors with equal :attr:`IInjector.scope` attribute.
 
         :param env:
             Environment name to assign value to.
 
-            Same key can be reused in different environments.
+            Same key can be reused in different environments. This is to
+            achieve different implementations depending on environment the
+            application is running in. For example, for development this
+            could be some kind of stub, for testing this will be some kind of
+            mock, and for production - this will be production
+            implementation.
         """
 
     @abc.abstractmethod

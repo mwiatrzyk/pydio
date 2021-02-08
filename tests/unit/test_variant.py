@@ -8,7 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-from pydio.api import Variant
+from pydio.variant import Variant
 
 
 class TestVariant:
