@@ -10,8 +10,8 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.exc** - Common library exceptions
-=========================================
+**pydio.exc** - Base exceptions
+===============================
 
 .. automodule:: pydio.exc
     :members:

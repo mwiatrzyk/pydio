@@ -10,8 +10,8 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.provider** - Object factory provider implementation
-===========================================================
+**pydio.provider** - Object factory provider
+============================================
 
 .. automodule:: pydio.provider
     :members:

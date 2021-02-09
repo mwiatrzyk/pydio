@@ -10,8 +10,8 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.api** - A handy shortcut to most commonly used classes
-==============================================================
+**pydio.api** - All core classes in one place
+=============================================
 
 .. automodule:: pydio.api
     :members:

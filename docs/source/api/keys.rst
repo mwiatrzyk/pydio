@@ -10,9 +10,9 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.variant** - Parametrized key proxy
-==========================================
+**pydio.keys** - Key wrappers for special purposes
+==================================================
 
-.. automodule:: pydio.variant
+.. automodule:: pydio.keys
     :members:
     :show-inheritance:

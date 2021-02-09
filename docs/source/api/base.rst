@@ -10,7 +10,7 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.base** - Abstract base classes
+**pydio.base** - Interface definitions
 ======================================
 
 .. automodule:: pydio.base

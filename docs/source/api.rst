@@ -20,5 +20,5 @@ API Reference
     api/base
     api/exc
     api/injector
+    api/keys
     api/provider
-    api/variant

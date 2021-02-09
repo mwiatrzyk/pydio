@@ -8,28 +8,20 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-"""A module providing aliases to most common used classes.
+"""An all-in-one module for making imports easier.
 
 You can use this in your code to create one-line imports. For example,
-instead of doing this:
-
-.. testcode::
-
-    from pydio.injector import Injector
-    from pydio.provider import Provider
-
-You can do this:
+instead of adding multiple PyDio imports to your application, you can do
+this instead:
 
 .. testcode::
 
     from pydio.api import Injector, Provider
-
-This is a replacement for commonly used ``from toolkit import Foo, Bar``
-idiom, which is discouraged due to performance reasons.
 """
+
 from .injector import Injector
 from .provider import Provider
-from .variant import Variant
+from .keys import Variant
 
 __all__ = [
     'Injector',

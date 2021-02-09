@@ -10,8 +10,8 @@
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-**pydio.injector** - Dependency injector implementation
-=======================================================
+**pydio.injector** - Dependency injector
+========================================
 
 .. automodule:: pydio.injector
     :members:
