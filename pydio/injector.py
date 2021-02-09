@@ -11,16 +11,31 @@
 import contextlib
 import inspect
 import weakref
-from typing import Hashable
+from typing import Hashable, Optional, Awaitable
 
 from . import exc
 from .base import IInjector, IUnboundFactoryRegistry
 
 
 class Injector(
-    IInjector, contextlib.AbstractContextManager,
+    IInjector,
+    contextlib.AbstractContextManager,
     contextlib.AbstractAsyncContextManager
 ):
+    """Dependency injector main class.
+
+    :param provider:
+        Unbound factory provider to work on
+
+    :param env:
+        Name of the environment this injector will use when making queries to
+        :class:`IUnboundFactoryRegistry` object given via **provider**.
+
+        This can be obtained f.e. from environment variable. Once injector is
+        created you will not be able to change this.
+
+        See :meth:`IUnboundFactoryRegistry.get` for more details.
+    """
 
     class NoProviderFoundError(exc.InjectorError):
         """Raised when there was no matching provider found for given key.
@@ -108,15 +123,8 @@ class Injector(
     def _parent(self, value):
         self.__parent = weakref.ref(value)
 
-    @property
-    def env(self):
-        return self._env
-
-    @property
-    def scope(self):
-        return self._scope
-
     def inject(self, key):
+        """See :class:`IInjector.inject`."""
         if self._provider is None:
             raise self.AlreadyClosedError()
         if key in self._cache:
@@ -136,14 +144,30 @@ class Injector(
         self._cache[key] = instance
         return instance.get_instance()
 
-    def scoped(self, scope):
+    def scoped(self, scope: Hashable) -> 'Injector':
+        """Create scoped injector that is a child of current one.
+
+        Scoped injectors can only operate on :class:`IUnboundFactory` objects
+        with :attr:`IUnboundFactory.scope` attribute being equal to given
+        scope.
+
+        :param scope:
+            User-defined scope name.
+        """
         injector = self.__class__(self._provider)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
         return injector
 
-    def close(self):
+    def close(self) -> Optional[Awaitable[None]]:
+        """Close this injector.
+
+        Closing injector invalidates injector and makes it unusable.
+
+        It also cleans up resources acquired by all generator-based object
+        factories that were used.
+        """
 
         def do_close():
             self._provider = None

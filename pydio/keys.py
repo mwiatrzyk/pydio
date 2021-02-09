@@ -16,11 +16,15 @@ from typing import Hashable
 class Variant(collections.abc.Hashable):
     """A special form of key that can have user-defined parameters attached.
 
+    This class can be used if you need to use same key twice, but return
+    different objects depending on additional parameters given (which can be
+    accessed by object factory)
+
     :param key:
         The key to be wrapped
 
     :param kwargs:
-        Named parameters to be attached
+        Additional parameters to be bound with given key
     """
 
     def __init__(self, key: Hashable, **kwargs: Hashable):
@@ -29,12 +33,12 @@ class Variant(collections.abc.Hashable):
 
     @property
     def key(self):
-        """Return wrapped key."""
+        """Wrapped key."""
         return self._key
 
     @property
     def kwargs(self) -> dict:
-        """Return dict containing attached parameters."""
+        """Dict containing attached parameters."""
         return self._kwargs
 
     def __repr__(self):

@@ -8,7 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-"""Base types for PyDio library."""
+"""Interface definitions."""
 
 import abc
 from typing import Awaitable, Hashable, Optional, Type, TypeVar, Union, overload
@@ -31,23 +31,30 @@ class IInjector(abc.ABC):
     def inject(self, key):
         """Create and return object for given hashable key.
 
-        On success, this method returns created object. On failure, it raises
+        On success, this method returns created object or awaitable pointing
+        to created object. On failure, it raises
         :exc:`pydio.exc.InjectorError`.
-
-        This method may return a coroutine if object factory used to create
-        output object is a coroutine.
 
         :param key:
             Identifier of underlying object factory to be used.
+
+            This can be either class object (f.e. base class or interface), a
+            hashable (f.e. string or a number), or a special key wrapper from
+            :mod:`pydio.keys`.
+
+            Please be aware that same key has to be used in provider during
+            registration of object factory.
         """
 
 
 class IFactory(abc.ABC):
-    """Base class for bound factories.
+    """Interface for bound factories.
 
-    These classes are responsible for actual creation of target objects.
-    Instances of this class are managed by :class:`IInjector` objects and are
-    produced by :meth:`IUnboundFactory.bind` method.
+    Bound factories are managed by :class:`IInjector` objects and are
+    responsible for construction of target object that is later returned by
+    :meth:`IInjector.inject`. Each factory should wrap one kind of object
+    factory function provided by user (f.e. normal function or a coroutine,
+    but never both).
     """
 
     @overload
@@ -62,17 +69,28 @@ class IFactory(abc.ABC):
     def get_instance(self):
         """Create and return target object.
 
-        This object is later returned by :meth:`IInjector.inject` method.
+        Value returned by this method is later also returned by
+        :meth:`IInjector.inject` method.
         """
 
 
 class IUnboundFactory(abc.ABC):
-    """Base class for unbound factories.
+    """Interface for unbound factories.
 
-    Unbound factories are created and managed by :class:`IUnboundFactoryRegistry` objects.
-    The role of this class is to wrap user-specified factory functions that
-    are being registered to providers.
+    Unbound factories are created and managed by
+    :class:`IUnboundFactoryRegistry` objects. The role of this class is to
+    wrap user-specified factory functions that are being registered to
+    providers.
     """
+
+    @property
+    @abc.abstractmethod
+    def scope(self) -> Optional[Hashable]:
+        """Name of the scope assigned to this factory.
+
+        Factories with scopes defined can only be used by injectors with same
+        scope set.
+        """
 
     @abc.abstractmethod
     def is_awaitable(self) -> bool:
@@ -84,13 +102,17 @@ class IUnboundFactory(abc.ABC):
         """Create :class:`IFactory` object to be owned by given injector.
 
         :param injector:
-            Injector to be bound
+            The owner of bound factory object to be created
         """
 
 
 class IUnboundFactoryRegistry(abc.ABC):
-    """Provides read-only access to :class:`IUnboundFactory` object
-    registry."""
+    """Interface for :class:`IUnboundFactory` objects registry.
+
+    Factory registries are used by :class:`IInjector` objects to find
+    :class:`IUnboundFactory` object that matches key that was given to
+    :meth:`IInjector.inject` call.
+    """
 
     @overload
     def get(self,
@@ -106,16 +128,22 @@ class IUnboundFactoryRegistry(abc.ABC):
 
     @abc.abstractmethod
     def get(self, key, env=None):
-        """Get :class:`IUnboundFactory` registered for given key and (if
-        given) environment.
+        """Get :class:`IUnboundFactory` registered for given key and
+        environment (if given).
 
-        If no factory was found, then return ``None``.
+        If no factory was found, then return None.
 
         :param key:
-            Searched key
+            See :meth:`IInjector.inject`
 
         :param env:
-            Searched environment
+            Environment name.
+
+            Same **key** can be reused by multiple environments, but none can
+            have that key duplicated. This is used to provide several
+            different implementations of one key that depend on environment
+            on which application is executed (f.e. different database may be
+            needed in testing, and different in production)
         """
 
     @abc.abstractmethod
@@ -123,7 +151,6 @@ class IUnboundFactoryRegistry(abc.ABC):
         """Return True if this factory registry contains awaitable factories
         or False otherwise.
 
-        Implementations will do this by querying underlying storage to find
-        at least one :class:`IUnboundFactory` object for which
-        :meth:`IUnboundFactory.is_awaitable` returns True.
+        Behind the scenes, this will check if there is at least one unbound
+        factory for which :meth:`IUnboundFactory.is_awaitable` returns True.
         """
