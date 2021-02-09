@@ -9,12 +9,36 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 import inspect
+from typing import Hashable
 
-from . import _factories
-from .base import IProvider
+from . import _factories, exc
+from .base import IUnboundFactoryRegistry
 
 
-class Provider(IProvider):
+class Provider(IUnboundFactoryRegistry):
+
+    class DoubleRegistrationError(exc.ProviderError):
+        """Raised when same ``(key, env)`` tuple was used twice during
+        registration.
+
+        :param key:
+            Registered key
+
+        :param env:
+            Registered environment
+        """
+        message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def env(self) -> Hashable:
+            return self.params['env']
 
     def __init__(self):
         self._unbound_factories = {}
@@ -54,9 +78,7 @@ class Provider(IProvider):
             _factories.GenericUnboundFactory(
                 self.__get_factory_class_for(func), key, func, scope=scope, env=env)
 
-    def register_instance(
-        self, key, value, scope=None, env=None
-    ):
+    def register_instance(self, key, value, scope=None, env=None):
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
             _factories.UnboundInstanceFactory(value, scope=scope, env=env)

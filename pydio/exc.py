@@ -57,4 +57,4 @@ class InjectorError(Base):
 
 class ProviderError(Base):
     """Base class for exceptions that can be raised by
-    :class:`pydio.base.IProvider` instances."""
+    :class:`pydio.base.IUnboundFactoryRegistry` instances."""

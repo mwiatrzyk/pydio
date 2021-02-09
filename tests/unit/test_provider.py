@@ -12,8 +12,15 @@ import pytest
 from mockify.core import satisfied
 from mockify.mock import ABCMock
 
-from pydio.base import IInjector
 from pydio.api import Provider
+from pydio.base import IInjector
+
+
+class TestProviderErrors:
+
+    def test_double_registration_error(self):
+        uut = Provider.DoubleRegistrationError(key='foo', env='dummy')
+        assert str(uut) == "Cannot register twice for: key='foo', env='dummy'"
 
 
 class TestProvider:

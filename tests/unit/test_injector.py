@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# tests/unit/test_base.py
+# tests/unit/test_injector.py
 #
 # Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
@@ -8,26 +8,19 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-from pydio.base import IInjector, IProvider
+from pydio.injector import Injector
 
 
-class TestIInjectorErrors:
+class TestInjectorErrors:
 
     def test_no_provider_found_error(self):
-        uut = IInjector.NoProviderFoundError(key='spam', env='testing')
+        uut = Injector.NoProviderFoundError(key='spam', env='testing')
         assert str(uut) == "No provider found for: key='spam', env='testing'"
 
     def test_out_of_scope_error(self):
-        uut = IInjector.OutOfScopeError(
+        uut = Injector.OutOfScopeError(
             key='foo', scope='first', required_scope='second'
         )
         assert str(
             uut
         ) == "Cannot inject 'foo' due to scope mismatch: 'second' (required) != 'first' (owned)"
-
-
-class TestIProviderErrors:
-
-    def test_double_registration_error(self):
-        uut = IProvider.DoubleRegistrationError(key='foo', env='dummy')
-        assert str(uut) == "Cannot register twice for: key='foo', env='dummy'"

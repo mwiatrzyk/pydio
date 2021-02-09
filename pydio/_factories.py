@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# pydio/_factory.py
+# pydio/_factories.py
 #
 # Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
@@ -135,14 +135,7 @@ class InstanceFactory(IFactory):
 
 class GenericUnboundFactory(IUnboundFactory):
 
-    def __init__(
-        self,
-        factory_class,
-        key,
-        func,
-        scope=None,
-        env=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, factory_class, key, func, scope=None, env=None):  # pylint: disable=too-many-arguments
         self._factory_class = factory_class
         self._key = key
         self._func = func

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# tests/unit/test_factory.py
+# tests/unit/test_factories.py
 #
 # Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
