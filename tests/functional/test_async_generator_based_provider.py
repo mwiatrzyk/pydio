@@ -49,3 +49,14 @@ class TestAsyncGeneratorBasedProvider:
         connection.close.expect_call().times(1)
         with satisfied(connection):
             await injector.close()
+
+    @pytest.mark.asyncio
+    async def test_use_injector_as_async_context_manager(self, injector):
+        connection = Mock('connection')
+        connection.close.expect_call().times(1)
+        with satisfied(connection):
+            async with injector:
+                database = injector.inject('database')
+                database.connect.expect_call().will_once(Return(connection))
+                with satisfied(database):
+                    await injector.inject('connection')

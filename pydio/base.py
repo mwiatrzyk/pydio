@@ -8,146 +8,159 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-import abc
-import contextlib
-from typing import Any, Callable, Hashable, Type, TypeVar, Union, overload
+"""Interface definitions."""
 
-from . import _utils, exc
+import abc
+from typing import Awaitable, Hashable, Optional, Type, TypeVar, Union, overload
 
 T, U = TypeVar('T'), TypeVar('U')
 
-NULL = _utils.Constant('NULL')
 
-DEFAULT_ENV = _utils.Constant('DEFAULT_ENV')
-
-DEFAULT_SCOPE = _utils.Constant('DEFAULT_SCOPE')
-
-
-class IInjector(contextlib.AbstractContextManager):
-
-    class NoProviderFoundError(exc.InjectorError):
-        message_template = "No provider found for key: {self.key!r}"
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-    class OutOfScopeError(exc.InjectorError):
-        message_template =\
-            "Cannot inject {self.key!r} due to scope mismatch: "\
-            "{self.expected_scope!r} (expected) != {self.given_scope!r} (given)"
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-        @property
-        def expected_scope(self) -> Hashable:
-            return self.params['expected_scope']
-
-        @property
-        def given_scope(self) -> Hashable:
-            return self.params['given_scope']
+class IInjector(abc.ABC):
+    """Definition of injector interface."""
 
     @overload
-    def inject(self, key: Type[T]) -> T:
+    def inject(self, key: Type[T]) -> Union[T, Awaitable[T]]:
         pass
 
     @overload
-    def inject(self, key: Hashable) -> U:
+    def inject(self, key: Hashable) -> Union[U, Awaitable[U]]:
         pass
 
     @abc.abstractmethod
     def inject(self, key):
-        pass
+        """Create and return object for given hashable key.
 
-    @abc.abstractmethod
-    def scoped(self, scope: Hashable) -> 'IInjector':
-        pass
+        On success, this method returns created object or awaitable pointing
+        to created object. On failure, it raises
+        :exc:`pydio.exc.InjectorError`.
 
-    @abc.abstractmethod
-    def close(self):
-        pass
+        :param key:
+            Identifier of underlying object factory to be used.
+
+            This can be either class object (f.e. base class or interface), a
+            hashable (f.e. string or a number), or a special key wrapper from
+            :mod:`pydio.keys`.
+
+            Please be aware that same key has to be used in provider during
+            registration of object factory.
+        """
 
 
 class IFactory(abc.ABC):
+    """Interface for bound factories.
 
-    @staticmethod
-    @abc.abstractmethod
-    def is_awaitable() -> bool:
+    Bound factories are managed by :class:`IInjector` objects and are
+    responsible for construction of target object that is later returned by
+    :meth:`IInjector.inject`. Each factory should wrap one kind of object
+    factory function provided by user (f.e. normal function or a coroutine,
+    but never both).
+    """
+
+    @overload
+    def get_instance(self) -> Optional[Union[T, Awaitable[T]]]:
+        pass
+
+    @overload
+    def get_instance(self) -> Optional[Union[U, Awaitable[U]]]:
         pass
 
     @abc.abstractmethod
-    def get_instance(
-        self
-    ) -> Union[T, U]:  # TODO: Union[T, U, NULL] (fails on NULL currently)
-        pass
+    def get_instance(self):
+        """Create and return target object.
+
+        Value returned by this method is later also returned by
+        :meth:`IInjector.inject` method.
+        """
 
     @abc.abstractmethod
     def close(self):
-        pass
+        """Close this factory.
+
+        When called, underlying instance is cleared and calling
+        :meth:`get_instance` again will return None. This method may also
+        invoke some additional custom-defined clearing actions (if supported
+        by implementation).
+        """
 
 
 class IUnboundFactory(abc.ABC):
+    """Interface for unbound factories.
+
+    Unbound factories are created and managed by
+    :class:`IUnboundFactoryRegistry` objects. The role of this class is to
+    wrap user-specified factory functions that are being registered to
+    providers.
+    """
 
     @property
     @abc.abstractmethod
-    def scope(self) -> Hashable:
-        pass
+    def scope(self) -> Optional[Hashable]:
+        """Name of the scope assigned to this factory.
+
+        Factories with scopes defined can only be used by injectors with same
+        scope set.
+        """
 
     @abc.abstractmethod
     def is_awaitable(self) -> bool:
-        pass
+        """Return True if this factory produces awaitable :class:`IFactory`
+        instances or False otherwise."""
 
     @abc.abstractmethod
     def bind(self, injector: IInjector) -> IFactory:
-        pass
+        """Create :class:`IFactory` object to be owned by given injector.
+
+        :param injector:
+            The owner of bound factory object to be created
+        """
 
 
-class IProvider(abc.ABC):
+class IUnboundFactoryRegistry(abc.ABC):
+    """Interface for :class:`IUnboundFactory` objects registry.
 
-    class DoubleRegistrationError(exc.ProviderError):
-        message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-        @property
-        def env(self) -> Hashable:
-            return self.params['env']
-
-    @overload
-    def get(self, key: Type[T], env: Hashable = DEFAULT_ENV) -> IUnboundFactory:
-        pass
+    Factory registries are used by :class:`IInjector` objects to find
+    :class:`IUnboundFactory` object that matches key that was given to
+    :meth:`IInjector.inject` call.
+    """
 
     @overload
-    def get(
-        self, key: Hashable, env: Hashable = DEFAULT_ENV
-    ) -> IUnboundFactory:
+    def get(self,
+            key: Type[T],
+            env: Hashable = None) -> Optional[IUnboundFactory]:
+        pass
+
+    @overload
+    def get(self,
+            key: Hashable,
+            env: Hashable = None) -> Optional[IUnboundFactory]:
         pass
 
     @abc.abstractmethod
-    def get(self, key, env=DEFAULT_ENV):
-        pass
+    def get(self, key, env=None):
+        """Get :class:`IUnboundFactory` registered for given key and
+        environment (if given).
 
-    # TODO: Rename to register_factory
-    @abc.abstractmethod
-    def register_func(
-        self,
-        key: Hashable,
-        func: Callable,
-        scope: Hashable = DEFAULT_SCOPE,
-        env: Hashable = DEFAULT_ENV
-    ):
-        pass
+        If no factory was found, then return None.
+
+        :param key:
+            See :meth:`IInjector.inject`
+
+        :param env:
+            Environment name.
+
+            Same **key** can be reused by multiple environments, but none can
+            have that key duplicated. This is used to provide several
+            different implementations of one key that depend on environment
+            on which application is executed (f.e. different database may be
+            needed in testing, and different in production)
+        """
 
     @abc.abstractmethod
-    def register_instance(
-        self,
-        key: Hashable,
-        value: Any,
-        scope: Hashable = DEFAULT_SCOPE,
-        env: Hashable = DEFAULT_ENV
-    ):
-        pass
+    def has_awaitables(self) -> bool:
+        """Return True if this factory registry contains awaitable factories
+        or False otherwise.
+
+        Behind the scenes, this will check if there is at least one unbound
+        factory for which :meth:`IUnboundFactory.is_awaitable` returns True.
+        """

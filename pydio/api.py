@@ -8,9 +8,20 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+"""An all-in-one module for making imports easier.
+
+You can use this in your code to create one-line imports. For example,
+instead of adding multiple PyDio imports to your application, you can do
+this instead:
+
+.. testcode::
+
+    from pydio.api import Injector, Provider
+"""
+
 from .injector import Injector
+from .keys import Variant
 from .provider import Provider
-from .variant import Variant
 
 __all__ = [
     'Injector',

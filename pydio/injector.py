@@ -8,25 +8,109 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import contextlib
+import inspect
 import weakref
-from typing import Hashable
+from typing import Awaitable, Hashable, Optional
 
-from . import exc
-from .base import DEFAULT_ENV, DEFAULT_SCOPE, IInjector, IProvider
+from . import _compat, exc
+from .base import IInjector, IUnboundFactoryRegistry
 
 
-class Injector(IInjector):
+class Injector(
+    IInjector, contextlib.AbstractContextManager,
+    _compat.AbstractAsyncContextManager
+):
+    """Dependency injector main class.
 
-    def __init__(self, provider: IProvider, env: Hashable = DEFAULT_ENV):
+    :param provider:
+        Unbound factory provider to work on
+
+    :param env:
+        Name of the environment this injector will use when making queries to
+        :class:`IUnboundFactoryRegistry` object given via **provider**.
+
+        This can be obtained f.e. from environment variable. Once injector is
+        created you will not be able to change this.
+
+        See :meth:`IUnboundFactoryRegistry.get` for more details.
+    """
+
+    class NoProviderFoundError(exc.InjectorError):
+        """Raised when there was no matching provider found for given key.
+
+        :param key:
+            Searched key
+
+        :param env:
+            Searched environment
+        """
+        message_template = "No provider found for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def env(self) -> Hashable:
+            return self.params['env']
+
+    class OutOfScopeError(exc.InjectorError):
+        """Raised when there was attempt to create object that was registered
+        for different scope.
+
+        :param key:
+            Searched key
+
+        :param scope:
+            Injector's own scope
+
+        :param required_scope:
+            Required scope
+        """
+        message_template =\
+            "Cannot inject {self.key!r} due to scope mismatch: "\
+            "{self.required_scope!r} (required) != {self.scope!r} (owned)"
+
+        def __init__(self, key, scope, required_scope):
+            super().__init__(
+                key=key, scope=scope, required_scope=required_scope
+            )
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def scope(self) -> Hashable:
+            return self.params['scope']
+
+        @property
+        def required_scope(self) -> Hashable:
+            return self.params['required_scope']
+
+    class AlreadyClosedError(exc.InjectorError):
+        """Raised when operation on a closed injector was performed."""
+        message_template = "This injector was already closed"
+
+    def __init__(self, provider: IUnboundFactoryRegistry, env: Hashable = None):
         self._provider = provider
         self._env = env
         self._cache = {}
-        self._scope = DEFAULT_SCOPE
+        self._scope = None
         self._children = []
         self.__parent = None
 
     def __exit__(self, *args):
         self.close()
+
+    async def __aexit__(self, *args):
+        maybe_coroutine = self.close()
+        if inspect.iscoroutine(maybe_coroutine):
+            await maybe_coroutine
 
     @property
     def _parent(self):
@@ -39,33 +123,50 @@ class Injector(IInjector):
         self.__parent = weakref.ref(value)
 
     def inject(self, key):
+        """See :class:`IInjector.inject`."""
         if self._provider is None:
-            raise exc.AlreadyClosedError()
+            raise self.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
         unbound_instance = self._provider.get(key, self._env)
         if unbound_instance is None:
-            raise self.NoProviderFoundError(key=key)
+            raise self.NoProviderFoundError(key=key, env=self._env)
         if unbound_instance.scope != self._scope:
             if self._parent is not None:
                 return self._parent.inject(key)
             raise self.OutOfScopeError(
                 key=key,
-                expected_scope=unbound_instance.scope,
-                given_scope=self._scope
+                scope=self._scope,
+                required_scope=unbound_instance.scope,
             )
         instance = unbound_instance.bind(self)
         self._cache[key] = instance
         return instance.get_instance()
 
-    def scoped(self, scope):
+    def scoped(self, scope: Hashable) -> 'Injector':
+        """Create scoped injector that is a child of current one.
+
+        Scoped injectors can only operate on :class:`IUnboundFactory` objects
+        with :attr:`IUnboundFactory.scope` attribute being equal to given
+        scope.
+
+        :param scope:
+            User-defined scope name.
+        """
         injector = self.__class__(self._provider)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
         return injector
 
-    def close(self):
+    def close(self) -> Optional[Awaitable[None]]:
+        """Close this injector.
+
+        Closing injector invalidates injector and makes it unusable.
+
+        It also cleans up resources acquired by all generator-based object
+        factories that were used.
+        """
 
         def do_close():
             self._provider = None
@@ -79,10 +180,9 @@ class Injector(IInjector):
             for child in self._children:
                 await child.close()
             for instance in self._cache.values():
-                if instance.is_awaitable():
-                    await instance.close()
-                else:
-                    instance.close()
+                maybe_coroutine = instance.close()
+                if inspect.iscoroutine(maybe_coroutine):
+                    await maybe_coroutine
 
         if not self._provider.has_awaitables():
             return do_close()
