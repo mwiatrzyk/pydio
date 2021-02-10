@@ -13,7 +13,7 @@ import inspect
 import weakref
 from typing import Awaitable, Hashable, Optional
 
-from . import exc, _compat
+from . import _compat, exc
 from .base import IInjector, IUnboundFactoryRegistry
 
 

@@ -113,4 +113,3 @@ class InstanceFactory(IFactory):
 
     def close(self):
         self._value = None
-
