@@ -1,8 +1,18 @@
 (unreleased)
 ------------
 
-* Add missing support for async context manager in
-  :class:`pydio.injector.Injector` class
+**Added**
+
+  * Add missing support for async context manager in
+    :class:`pydio.injector.Injector` class
+  * Add initial documentation draft with API docs
+  * Add some badges to the project
+
+**Changed**
+
+  * Improved README.rst file with simple example
+  * Redesigned :mod:`pydio.base` module
+  * Module renamed: pydio.variant -> :mod:`pydio.keys`
 
 0.1.0rc3 (2021-02-04)
 ---------------------
