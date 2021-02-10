@@ -8,10 +8,9 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-import inspect
 from typing import Hashable
 
-from . import _factories, exc
+from . import _unbound_factories, exc
 from .base import IUnboundFactoryRegistry
 
 
@@ -106,8 +105,7 @@ class Provider(IUnboundFactoryRegistry):
         """
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
-            _factories.GenericUnboundFactory(
-                self.__get_factory_class_for(func), key, func, scope=scope, env=env)
+            _unbound_factories.UnboundFunctionFactory(func, key, scope=scope, env=env)
 
     def register_instance(self, key, value, scope=None, env=None):
         """Same as :meth:`register_func`, but for registration of constant
@@ -118,17 +116,7 @@ class Provider(IUnboundFactoryRegistry):
         """
         self._check_key_availability(key, env)
         self._unbound_factories.setdefault(key, {})[env] =\
-            _factories.UnboundInstanceFactory(value, scope=scope, env=env)
-
-    @staticmethod
-    def __get_factory_class_for(func):
-        if inspect.isasyncgenfunction(func):
-            return _factories.AsyncGeneratorFactory
-        if inspect.iscoroutinefunction(func):
-            return _factories.CoroutineFactory
-        if inspect.isgeneratorfunction(func):
-            return _factories.GeneratorFactory
-        return _factories.FunctionFactory
+            _unbound_factories.UnboundInstanceFactory(value, scope=scope, env=env)
 
     def provides(self, key, scope=None, env=None):
         """Same as :meth:`register_func`, but to be used as a decorator.

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# tests/unit/test_variant.py
+# tests/unit/test_keys.py
 #
 # Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #

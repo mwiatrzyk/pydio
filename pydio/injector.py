@@ -11,15 +11,14 @@
 import contextlib
 import inspect
 import weakref
-from typing import Hashable, Optional, Awaitable
+from typing import Awaitable, Hashable, Optional
 
 from . import exc
 from .base import IInjector, IUnboundFactoryRegistry
 
 
 class Injector(
-    IInjector,
-    contextlib.AbstractContextManager,
+    IInjector, contextlib.AbstractContextManager,
     contextlib.AbstractAsyncContextManager
 ):
     """Dependency injector main class.
@@ -181,10 +180,9 @@ class Injector(
             for child in self._children:
                 await child.close()
             for instance in self._cache.values():
-                if instance.is_awaitable():
-                    await instance.close()
-                else:
-                    instance.close()
+                maybe_coroutine = instance.close()
+                if inspect.iscoroutine(maybe_coroutine):
+                    await maybe_coroutine
 
         if not self._provider.has_awaitables():
             return do_close()

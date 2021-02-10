@@ -28,9 +28,6 @@ class TestGeneratorFactory:
         yield connection
         connection.close()
 
-    def test_generator_factory_is_not_awaitable(self):
-        assert not self.uut.is_awaitable()
-
     def test_get_instance_always_returns_same_object(self):
         connection = Mock('connection')
         self.database.connect.expect_call().will_once(Return(connection))
@@ -63,9 +60,6 @@ class TestAsyncGeneratorFactory:
         connection = self.database.connect()
         yield connection
         connection.close()
-
-    def test_async_generator_factory_is_awaitable(self):
-        assert self.uut.is_awaitable()
 
     @pytest.mark.asyncio
     async def test_get_instance_always_returns_same_object(self):
@@ -102,9 +96,6 @@ class TestCoroutineFactory:
     async def make_dummy_object(self):
         return [42]
 
-    def test_coroutine_factory_is_awaitable(self):
-        assert self.uut.is_awaitable()
-
     @pytest.mark.asyncio
     async def test_get_instance_always_returns_same_object(self):
         first = await self.uut.get_instance()
@@ -127,9 +118,6 @@ class TestFunctionFactory:
     def make_dummy_object(self):
         return [42]
 
-    def test_function_factory_is_not_awaitable(self):
-        assert not self.uut.is_awaitable()
-
     def test_get_instance_always_returns_same_object(self):
         first = self.uut.get_instance()
         second = self.uut.get_instance()
@@ -146,9 +134,6 @@ class TestInstanceFactory:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.InstanceFactory([42])
-
-    def test_instance_factory_is_not_awaitable(self):
-        assert not self.uut.is_awaitable()
 
     def test_get_instance_always_returns_same_object(self):
         assert self.uut.get_instance() is self.uut.get_instance()

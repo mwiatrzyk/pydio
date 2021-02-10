@@ -59,13 +59,11 @@ def serve_coverage(ctx, host='localhost', port=8000):
 def lint_code(ctx):
     """Run linter on source files."""
     args = ['pylint -f colorized --fail-under=9.0 pydio']
-    args.extend(
-        [
-            '-d missing-module-docstring',
-            '-d missing-class-docstring',
-            '-d missing-function-docstring',
-        ]
-    )
+    args.extend([
+        '-d missing-module-docstring',
+        '-d missing-class-docstring',
+        '-d missing-function-docstring',
+    ])
     ctx.run(' '.join(args))
 
 
@@ -73,18 +71,16 @@ def lint_code(ctx):
 def lint_tests(ctx):
     """Run linter on test files."""
     args = ['pylint tests -f colorized --fail-under=9.0']
-    args.extend(
-        [
-            '-d missing-module-docstring',
-            '-d missing-class-docstring',
-            '-d missing-function-docstring',
-            '-d attribute-defined-outside-init',
-            '-d too-few-public-methods',
-            '-d too-many-public-methods',
-            '-d no-self-use',
-            '-d line-too-long',
-        ]
-    )
+    args.extend([
+        '-d missing-module-docstring',
+        '-d missing-class-docstring',
+        '-d missing-function-docstring',
+        '-d attribute-defined-outside-init',
+        '-d too-few-public-methods',
+        '-d too-many-public-methods',
+        '-d no-self-use',
+        '-d line-too-long',
+    ])
     ctx.run(' '.join(args))
 
 

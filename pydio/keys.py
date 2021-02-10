@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# pydio/variant.py
+# pydio/keys.py
 #
 # Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
@@ -9,7 +9,6 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 import collections.abc
-import itertools
 from typing import Hashable
 
 
@@ -38,7 +37,7 @@ class Variant(collections.abc.Hashable):
 
     @property
     def kwargs(self) -> dict:
-        """Dict containing attached parameters."""
+        """Dict with parameters given in constructor."""
         return self._kwargs
 
     def __repr__(self):
@@ -47,9 +46,7 @@ class Variant(collections.abc.Hashable):
         )
 
     def __hash__(self):
-        return hash(
-            frozenset(itertools.chain([self._key], self._kwargs.items()))
-        )
+        return hash(self._key)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and\

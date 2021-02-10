@@ -20,8 +20,8 @@ this instead:
 """
 
 from .injector import Injector
-from .provider import Provider
 from .keys import Variant
+from .provider import Provider
 
 __all__ = [
     'Injector',

@@ -1,5 +1,5 @@
 .. ----------------------------------------------------------------------------
-.. docs/source/api/variant.rst
+.. docs/source/api/keys.rst
 ..
 .. Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
