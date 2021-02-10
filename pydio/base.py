@@ -73,6 +73,16 @@ class IFactory(abc.ABC):
         :meth:`IInjector.inject` method.
         """
 
+    @abc.abstractmethod
+    def close(self):
+        """Close this factory.
+
+        When called, underlying instance is cleared and calling
+        :meth:`get_instance` again will return None. This method may also
+        invoke some additional custom-defined clearing actions (if supported
+        by implementation).
+        """
+
 
 class IUnboundFactory(abc.ABC):
     """Interface for unbound factories.
