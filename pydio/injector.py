@@ -13,13 +13,13 @@ import inspect
 import weakref
 from typing import Awaitable, Hashable, Optional
 
-from . import exc
+from . import exc, _compat
 from .base import IInjector, IUnboundFactoryRegistry
 
 
 class Injector(
     IInjector, contextlib.AbstractContextManager,
-    contextlib.AbstractAsyncContextManager
+    _compat.AbstractAsyncContextManager
 ):
     """Dependency injector main class.
 
