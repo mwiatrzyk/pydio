@@ -90,7 +90,7 @@ User's Guide
     :maxdepth: 3
 
     installation
-    tutorial
+    quickstart
     api
     changelog
     license
