@@ -55,6 +55,10 @@ item storage interface:
     class ITodoItemStorage(abc.ABC):
 
         @abc.abstractmethod
+        def create(self, item: TodoItem):
+            pass
+
+        @abc.abstractmethod
         def save(self, item: TodoItem):
             pass
 
@@ -86,7 +90,7 @@ Finally, let's write our use case classes:
             item.title = title
             item.description = description
             item.done = False
-            self._todo_storage.save(item)
+            self._todo_storage.create(item)
 
     class ListTodos:
 
@@ -143,6 +147,9 @@ implementation:
         def __init__(self):
             self._todos = {}
 
+        def create(self, item):
+            self._todos[item.uuid] = item
+
         def save(self, item):
             self._todos[item.uuid] = item
 
@@ -185,6 +192,122 @@ And here's how it works:
 .. doctest::
 
     >>> app = TodoApplication()
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
+
+Adding another environment
+--------------------------
+
+Okay, so we have our basic scenario working in development environment. But
+to make it work in production, we need some non-volatile storage. Therefore,
+we need another implementation. Let it be a some kind of SQL database:
+
+.. testcode::
+
+    import sqlite3
+
+    class SQLiteDatabase:
+
+        def __init__(self, db_name):
+            self._connection = sqlite3.connect(db_name)
+            c = self._connection.cursor()
+            c.execute("""CREATE TABLE IF NOT EXISTS todos (
+                uuid UUID PRIMARY KEY,
+                created DATETIME,
+                title TEXT,
+                description TEXT,
+                done BOOLEAN)""")
+            self._connection.commit()
+
+        def connect(self):
+            return self._connection
+
+    class SQLiteTodoRegistry(ITodoItemStorage):
+
+        def __init__(self, connection):
+            self._conn = connection
+
+        def create(self, item):
+            c = self._conn.cursor()
+            c.execute(
+                "INSERT INTO todos VALUES (?, ?, ?, ?, ?)",
+                [str(item.uuid), item.created, item.title, item.description,
+                item.done])
+            self._conn.commit()
+
+        def save(self, item):
+            c = self._conn.cursor()
+            c.execute("UPDATE todos SET done=?", [item.done])  # Just for our case
+            self._conn.commit()
+
+        def delete(self, item_uuid):
+            c = self._conn.cursor()
+            c.execute("DELETE FROM todos WHERE uuid=?", [str(item_uuid)])
+
+        def get(self, item_uuid):
+            c = self._conn.cursor()
+            c.execute("SELECT * FROM todos WHERE uuid=?", [str(item_uuid)])
+            row = c.fetchone()
+            return self._make_todo(row)
+
+        def list(self):
+            c = self._conn.cursor()
+            c.execute("SELECT * FROM todos")
+            for row in c.fetchmany():
+                yield self._make_todo(row)
+
+        def _make_todo(self, row):
+            item = TodoItem()
+            item.uuid = row[0]
+            item.created = row[1]
+            item.title = row[2]
+            item.description = row[3]
+            item.done = True if row[4] else False
+            return item
+
+And now, let's modify our original application. But this time, we need both
+storages at once! We'll decide which one to use by giving environment name to
+**TodoApplication**'s constructor:
+
+.. testcode::
+
+    from typing import List
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            if env == 'production':
+                self._database = SQLiteDatabase(':memory:')
+                self._todo_storage = SQLiteTodoRegistry(self._database.connect())
+            else:
+                self._todo_storage = InMemoryTodoRegistry()
+
+        def create(self, title: str, description: str):
+            CreateTodo(self._todo_storage).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            CompleteTodo(self._todo_storage).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            return [x for x in ListTodos(self._todo_storage).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            DeleteTodo(self._todo_storage).invoke(item_uuid)
+
+As you can see, the code gets more complicated. And this is only one
+interface with just only two implementations! Let's see how this works:
+
+.. doctest::
+
+    >>> app = TodoApplication('production')
     >>> app.create('shopping', 'buy some milk')
     >>> items = app.list()
     >>> items
