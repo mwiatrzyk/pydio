@@ -142,7 +142,7 @@ implementation:
 
 .. testcode::
 
-    class InMemoryTodoRegistry(ITodoItemStorage):
+    class InMemoryTodoStorage(ITodoItemStorage):
 
         def __init__(self):
             self._todos = {}
@@ -173,7 +173,7 @@ Now we can use it in our application. It will be represented by
     class TodoApplication:
 
         def __init__(self):
-            self._todo_storage = InMemoryTodoRegistry()
+            self._todo_storage = InMemoryTodoStorage()
 
         def create(self, title: str, description: str):
             CreateTodo(self._todo_storage).invoke(title, description)
@@ -230,7 +230,7 @@ we need another implementation. Let it be a some kind of SQL database:
         def connect(self):
             return self._connection
 
-    class SQLiteTodoRegistry(ITodoItemStorage):
+    class SQLiteTodoStorage(ITodoItemStorage):
 
         def __init__(self, connection):
             self._conn = connection
@@ -241,7 +241,6 @@ we need another implementation. Let it be a some kind of SQL database:
                 "INSERT INTO todos VALUES (?, ?, ?, ?, ?)",
                 [str(item.uuid), item.created, item.title, item.description,
                 item.done])
-            self._conn.commit()
 
         def save(self, item):
             c = self._conn.cursor()
@@ -286,9 +285,9 @@ storages at once! We'll decide which one to use by giving environment name to
         def __init__(self, env):
             if env == 'production':
                 self._database = SQLiteDatabase(':memory:')
-                self._todo_storage = SQLiteTodoRegistry(self._database.connect())
+                self._todo_storage = SQLiteTodoStorage(self._database.connect())
             else:
-                self._todo_storage = InMemoryTodoRegistry()
+                self._todo_storage = InMemoryTodoStorage()
 
         def create(self, title: str, description: str):
             CreateTodo(self._todo_storage).invoke(title, description)
@@ -318,3 +317,133 @@ interface with just only two implementations! Let's see how this works:
     >>> app.delete(items[0]['uuid'])
     >>> app.list()
     []
+
+Introducing providers
+---------------------
+
+As you can see, when implementing additional storages, our business logic was
+not affected at all, however configuration part of our application was
+getting more complicated. Now let's do some refactoring with PyDio.
+
+First, we need to create **providers**. Providers are used to wrap
+user-defined factory functions and give it a key that can be referenced
+later. Here are providers for our two previously created storages:
+
+.. testcode::
+
+    from pydio.api import Provider
+
+    provider = Provider()
+
+    @provider.provides(ITodoItemStorage)
+    def make_in_memory_todo_storage():  # (1)
+        return InMemoryTodoStorage()
+
+    @provider.provides(ITodoItemStorage, env='production')
+    def make_sqlite_todo_storage():  # (2)
+        database = SQLiteDatabase(':memory:')
+        return SQLiteTodoStorage(database.connect())
+
+We have created two object factories with a key set in both to
+**ITodoItemStorage** - our interface created earlier. Object factory (1) will
+be used as a default for that key, while (2) will only be used for production
+environment. Of course, environment names are not predefined - you can set it
+to anything you like. The only requirement is to use same name later.
+
+Introducing injectors
+---------------------
+
+Now let me introduce second element of PyDio library - the **injector**.
+Here's our TODO application from earlier example refactored to use injector:
+
+.. testcode::
+
+    from pydio.api import Injector  # (1)
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            self._injector = Injector(provider, env=env)  # (2)
+
+        @property
+        def _todo_storage(self):
+            return self._injector.inject(ITodoItemStorage)  # (3)
+
+        def create(self, title: str, description: str):
+            CreateTodo(self._todo_storage).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            CompleteTodo(self._todo_storage).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            return [x for x in ListTodos(self._todo_storage).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            DeleteTodo(self._todo_storage).invoke(item_uuid)
+
+.. doctest::
+    :hide:
+
+    >>> app = TodoApplication('production')
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
+
+And now a brief explanation:
+
+    * First, we need to import :class:`pydio.injector.Injector` class (1)
+
+    * Now we have to create instance of that class. We need to pass
+      provider created earlier and environment given from the outside (2).
+      Our newly created injector will later use given provider and
+      environment to find matching factory.
+
+    * And finally (3), we use :meth:`pydio.injector.Injector.inject` method to
+      perform injections. We use same key as previously in provider, and
+      environment passed in constructor will be used implicitly to find
+      matching variant of our factory.
+
+As you can see, the code of our application is much simpler after
+refactoring. Moreover, we can easily attach another implementation of our
+storage - we just need to create another factory, and decorate it with same
+key, but different environment. Here's an example that uses mock this time:
+
+.. testcode::
+
+    from mockify.mock import ABCMock
+
+    @provider.provides(ITodoItemStorage, env='testing')
+    def make_storage_mock():
+        return ABCMock('storage_mock', ITodoItemStorage)
+
+And now, let's run our **unchanged** application code, but giving it an
+environment we've just used:
+
+.. doctest::
+
+    >>> app = TodoApplication('testing')
+    >>> app.create('shopping', 'buy some milk')
+    Traceback (most recent call last):
+        ...
+    mockify.exc.UninterestedCall: No expectations recorded for mock:
+    <BLANKLINE>
+    at <doctest default[0]>:13
+    --------------------------
+    Called:
+      storage_mock.create(<TodoItem object at ...>)
+
+As you can see, our mock was now triggered - not in-memory, neither SQLite
+storage.
+
+.. note::
+    The call failed with exception, because we did not record any
+    expectations - that's default behaviour for Mockify. Please proceed to
+    https://mockify.readthedocs.io/en/latest/ if you want to read more about
+    Mockify - my other project.
