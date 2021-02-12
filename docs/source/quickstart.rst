@@ -549,3 +549,131 @@ again. This time we'll use injector to inject use case classes only:
     >>> app.delete(items[0]['uuid'])
     >>> app.list()
     []
+
+Using scopes
+------------
+
+The solution we've prepared so far would not work in real situations unless
+we create different application object for every action. That is due to the
+fact, that each object factory is **called only once** per injector's
+lifetime. And since we create injector in application's constructor, we would
+have to call it (the constructor) again for every method call - otherwise we
+would start sharing our objects between API calls, and that may not be
+expected behavior.
+
+To solve this issue, PyDio provides **scopes**. Scopes are implemented by
+creating new injector from given one, and giving the new one access to
+user-defined scope, plus its ancestors. Such created injectors can have
+shorter lifetime than the root one.
+
+But we also need to set scopes when factory functions are registered to
+provider - just like we did for environments:
+
+.. testcode::
+
+    provider = Provider()
+
+    @provider.provides(ITodoItemStorage, scope='app')
+    def make_in_memory_todo_storage():
+        return InMemoryTodoStorage()
+
+    @provider.provides(ITodoItemStorage, env='testing', scope='app')
+    def make_storage_mock():
+        return ABCMock('storage_mock', ITodoItemStorage)
+
+    @provider.provides(ITodoItemStorage, env='production', scope='app')
+    def make_sqlite_todo_storage():
+        database = SQLiteDatabase(':memory:')
+        return SQLiteTodoStorage(database.connect())
+
+    @provider.provides(CreateTodo, scope='action')
+    def make_create_todo(injector: Injector):
+        return CreateTodo(injector.inject(ITodoItemStorage))
+
+    @provider.provides(CompleteTodo, scope='action')
+    def make_complete_todo(injector: Injector):
+        return CompleteTodo(injector.inject(ITodoItemStorage))
+
+    @provider.provides(ListTodos, scope='action')
+    def make_list_todos(injector: Injector):
+        return ListTodos(injector.inject(ITodoItemStorage))
+
+    @provider.provides(DeleteTodo, scope='action')
+    def make_delete_todos(injector: Injector):
+        return DeleteTodo(injector.inject(ITodoItemStorage))
+
+We've registered our factories using two scopes: *app* and *action*. Now,
+let's change our application class to something like this:
+
+.. testcode::
+
+    injector = Injector(provider)  # (1)
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            self._injector = injector.scoped('app', env=env)  # (2)
+
+        def create(self, title: str, description: str):
+            with self._injector.scoped('action') as injector:  # (3)
+                injector.inject(CreateTodo).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(CompleteTodo).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            with self._injector.scoped('action') as injector:
+                return [x for x in injector.inject(ListTodos).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(DeleteTodo).invoke(item_uuid)
+
+        def shutdown(self):
+            self._injector.close()
+
+.. doctest::
+    :hide:
+
+    >>> app = TodoApplication('production')
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
+    >>> app.shutdown()
+
+And now some explanation:
+
+    * We've created a root injector at (1)
+
+    * Then, in our application, we've created a **scoped** injector from our
+      root and named it *app* - it will be application-wide. This injector
+      will be able to use object factories:
+
+        * that does not have scope assigned,
+        * that has *app* scope assigned.
+
+      All other will not be accessible from there.
+
+    * Finally, in our actions we've created another scoped injector, from our
+      application's one, and named it with a scope *action* (3). This injector
+      will be able to use object factories:
+
+        * that does not have scope assigned,
+        * that have *app* scope assigned (as it is a child of *app* scoped injector),
+        * that have *action* scope assigned.
+
+      And - like previously - all other will not be accessible.
+
+    * The lifetime of each injector is:
+
+        * Same as for process (root injector)
+        * Until ``shutdown()`` is called (*app* injector)
+        * Until we are under context manager (each *action* injector)

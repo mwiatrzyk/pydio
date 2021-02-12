@@ -143,7 +143,7 @@ class Injector(
         self._cache[key] = instance
         return instance.get_instance()
 
-    def scoped(self, scope: Hashable) -> 'Injector':
+    def scoped(self, scope: Hashable, env: Hashable = None) -> 'Injector':
         """Create scoped injector that is a child of current one.
 
         Scoped injectors can only operate on :class:`IUnboundFactory` objects
@@ -152,12 +152,33 @@ class Injector(
 
         :param scope:
             User-defined scope name.
+
+        :param env:
+            User-defined environment name for newly created injector and all
+            its descendants.
+
+            This option is applicable only if none of the ancestors of newly
+            created injector has environment set. Otherwise, setting this will
+            cause :exc:`ValueError` exception.
         """
+        if env is not None:
+            parent_env = self.__get_parent_env()
+            if parent_env is not None:
+                raise ValueError("environment was already set by parent: {}".format(parent_env))
         injector = self.__class__(self._provider)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
+        injector._env = env  # pylint: disable=protected-access
         return injector
+
+    def __get_parent_env(self):
+        parent = self
+        while parent is not None:
+            env = parent._env  # pylint: disable=protected-access
+            if env is not None:
+                return env
+            parent = parent._parent  # pylint: disable=protected-access
 
     def close(self) -> Optional[Awaitable[None]]:
         """Close this injector.
@@ -184,6 +205,7 @@ class Injector(
                 if inspect.iscoroutine(maybe_coroutine):
                     await maybe_coroutine
 
-        if not self._provider.has_awaitables():
-            return do_close()
-        return do_async_close()
+        if self._provider is not None:  # FIXME: docs, quickstart, app.shutdown() required this if to work
+            if not self._provider.has_awaitables():
+                return do_close()
+            return do_async_close()
