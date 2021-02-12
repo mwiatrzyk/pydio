@@ -447,3 +447,105 @@ storage.
     expectations - that's default behaviour for Mockify. Please proceed to
     https://mockify.readthedocs.io/en/latest/ if you want to read more about
     Mockify - my other project.
+
+Using nested injections
+-----------------------
+
+Our example is rather trivial. In real life projects there are often much
+more dependencies to be injected, and sometimes it is event necessary to
+inject dependencies to the object that is being injected as well (nested
+injections). To show how this works, let's first extract our use case class
+constructors out of the application and use provider to provide those as
+well. Of course, our use cases will still need a storage, so we will have to
+use nested injections:
+
+.. testcode::
+
+    provider = Provider()
+
+    @provider.provides(ITodoItemStorage)
+    def make_in_memory_todo_storage():
+        return InMemoryTodoStorage()
+
+    @provider.provides(ITodoItemStorage, env='testing')
+    def make_storage_mock():
+        return ABCMock('storage_mock', ITodoItemStorage)
+
+    @provider.provides(ITodoItemStorage, env='production')
+    def make_sqlite_todo_storage():
+        database = SQLiteDatabase(':memory:')
+        return SQLiteTodoStorage(database.connect())
+
+    @provider.provides(CreateTodo)
+    def make_create_todo(injector: Injector): # (1)
+        return CreateTodo(injector.inject(ITodoItemStorage))  # (2)
+
+    @provider.provides(CompleteTodo)
+    def make_complete_todo(injector: Injector):
+        return CompleteTodo(injector.inject(ITodoItemStorage))
+
+    @provider.provides(ListTodos)
+    def make_list_todos(injector: Injector):
+        return ListTodos(injector.inject(ITodoItemStorage))
+
+    @provider.provides(DeleteTodo)
+    def make_delete_todos(injector: Injector):
+        return DeleteTodo(injector.inject(ITodoItemStorage))
+
+And now some explanation:
+
+    * First, we need to add argument for passing current injector to our
+      factory function. All supported arguments are:
+
+        * **injector** - for passing current injector (the one that owns that
+          object factory)
+
+        * **key** - for passing key assigned to that factory (**CreateTodo** in
+          this case)
+
+        * **env** - for passing environment name
+
+      These names are reserved currently, however the order may be changed -
+      you can pick from 0-3 arguments out of that predefined ones depending
+      on your needs. In other words, this works similarly to PyTest's
+      fixtures.
+
+    * And finally (2), we use **injector** just like in our application class
+      earlier.
+
+Okay, we have our provider configured, so let's now rewrite our application
+again. This time we'll use injector to inject use case classes only:
+
+.. testcode::
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            self._injector = Injector(provider, env=env)
+
+        def create(self, title: str, description: str):
+            self._injector.inject(CreateTodo).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            self._injector.inject(CompleteTodo).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            return [x for x in self._injector.inject(ListTodos).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            self._injector.inject(DeleteTodo).invoke(item_uuid)
+
+.. doctest::
+    :hide:
+
+    >>> app = TodoApplication('production')
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
