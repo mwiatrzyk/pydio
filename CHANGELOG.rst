@@ -1,3 +1,11 @@
+0.1.0 (2021-02-13)
+------------------
+
+**Added**
+
+  * Add quickstart tutorial to documentation
+  * Add **env** parameter to :meth:`pydio.injector.Injector.scoped` method
+
 0.1.0rc4 (2021-02-10)
 ---------------------
 

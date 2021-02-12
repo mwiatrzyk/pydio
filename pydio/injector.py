@@ -146,9 +146,10 @@ class Injector(
     def scoped(self, scope: Hashable, env: Hashable = None) -> 'Injector':
         """Create scoped injector that is a child of current one.
 
-        Scoped injectors can only operate on :class:`IUnboundFactory` objects
-        with :attr:`IUnboundFactory.scope` attribute being equal to given
-        scope.
+        Scoped injectors can only operate on
+        :class:`pydio.base.IUnboundFactory` objects with
+        :attr:`pydio.base.IUnboundFactory.scope` attribute being equal to
+        given scope.
 
         :param scope:
             User-defined scope name.
@@ -164,7 +165,10 @@ class Injector(
         if env is not None:
             parent_env = self.__get_parent_env()
             if parent_env is not None:
-                raise ValueError("environment was already set by parent: {}".format(parent_env))
+                raise ValueError(
+                    "environment was already set by parent: {}".
+                    format(parent_env)
+                )
         injector = self.__class__(self._provider, env=env or self._env)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access

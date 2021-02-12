@@ -1,5 +1,5 @@
 .. ----------------------------------------------------------------------------
-.. docs/source/tutorial.rst
+.. docs/source/quickstart.rst
 ..
 .. Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
