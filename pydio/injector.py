@@ -165,11 +165,10 @@ class Injector(
             parent_env = self.__get_parent_env()
             if parent_env is not None:
                 raise ValueError("environment was already set by parent: {}".format(parent_env))
-        injector = self.__class__(self._provider)
+        injector = self.__class__(self._provider, env=env or self._env)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
-        injector._env = env  # pylint: disable=protected-access
         return injector
 
     def __get_parent_env(self):

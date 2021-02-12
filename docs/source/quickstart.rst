@@ -217,18 +217,19 @@ we need another implementation. Let it be a some kind of SQL database:
     class SQLiteDatabase:
 
         def __init__(self, db_name):
-            self._connection = sqlite3.connect(db_name)
-            c = self._connection.cursor()
+            self._db_name = db_name
+
+        def connect(self):
+            connection = sqlite3.connect(self._db_name)
+            c = connection.cursor()
             c.execute("""CREATE TABLE IF NOT EXISTS todos (
                 uuid UUID PRIMARY KEY,
                 created DATETIME,
                 title TEXT,
                 description TEXT,
                 done BOOLEAN)""")
-            self._connection.commit()
-
-        def connect(self):
-            return self._connection
+            connection.commit()
+            return connection
 
     class SQLiteTodoStorage(ITodoItemStorage):
 
@@ -677,3 +678,113 @@ And now some explanation:
         * Same as for process (root injector)
         * Until ``shutdown()`` is called (*app* injector)
         * Until we are under context manager (each *action* injector)
+
+Using generator-based object factories
+--------------------------------------
+
+We are still missing one important thing in our application - database
+sessions. Of course, that is not needed for a in-memory storage, but
+definitely will have to be used for SQL-based storage. And the session scope
+should be limited only to actions. How to do that using PyDio? Here's a
+solution:
+
+.. testcode::
+
+    provider = Provider()
+
+    @provider.provides('database', env='production', scope='app')  # (1)
+    def make_database():
+        return SQLiteDatabase(':memory:').connect()
+
+    @provider.provides(ITodoItemStorage, env='production', scope='action')
+    def make_sqlite_todo_storage(injector):
+        connection = injector.inject('database')  # (2)
+        try:
+            yield SQLiteTodoStorage(connection)  # (3)
+        except Exception:
+            connection.close()
+        else:
+            connection.commit()
+
+.. testcode::
+    :hide:
+
+    @provider.provides(ITodoItemStorage, scope='app')
+    def make_in_memory_todo_storage():
+        return InMemoryTodoStorage()
+
+    @provider.provides(ITodoItemStorage, env='testing', scope='app')
+    def make_storage_mock():
+        return ABCMock('storage_mock', ITodoItemStorage)
+
+    @provider.provides(CreateTodo, scope='action')
+    def make_create_todo(injector: Injector):
+        return CreateTodo(injector.inject(ITodoItemStorage))
+
+    @provider.provides(CompleteTodo, scope='action')
+    def make_complete_todo(injector: Injector):
+        return CompleteTodo(injector.inject(ITodoItemStorage))
+
+    @provider.provides(ListTodos, scope='action')
+    def make_list_todos(injector: Injector):
+        return ListTodos(injector.inject(ITodoItemStorage))
+
+    @provider.provides(DeleteTodo, scope='action')
+    def make_delete_todos(injector: Injector):
+        return DeleteTodo(injector.inject(ITodoItemStorage))
+
+This time, we've extracted making database to a separate factory function (1)
+and changed the scope for ``make_sqlite_todo_storage`` function to *action*.
+Notice, that the scope of ``make_database`` function is still set to *app*,
+so database object will be bound to *app* injector and reused by all *action*
+injectors. There is one more important thing: we've used a **generator** in
+(3). Thanks to this, we were able to customize cleanup behavior for that
+particular factory to either do a commit, or a rollback - in similar way as
+in PyTest fixtures.
+
+That will work with unchanged application code from previous example.
+
+.. testcode::
+    :hide:
+
+    injector = Injector(provider)
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            self._injector = injector.scoped('app', env=env)
+
+        def create(self, title: str, description: str):
+            with self._injector.scoped('action') as injector:
+                injector.inject(CreateTodo).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(CompleteTodo).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            with self._injector.scoped('action') as injector:
+                return [x for x in injector.inject(ListTodos).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(DeleteTodo).invoke(item_uuid)
+
+        def shutdown(self):
+            self._injector.close()
+
+.. doctest::
+    :hide:
+
+    >>> app = TodoApplication('production')
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
+    >>> app.shutdown()
