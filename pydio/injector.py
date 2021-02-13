@@ -122,6 +122,11 @@ class Injector(
     def _parent(self, value):
         self.__parent = weakref.ref(value)
 
+    @property
+    def env(self):
+        """Environment assigned to this injector."""
+        return self._env
+
     def inject(self, key):
         """See :class:`IInjector.inject`."""
         if self._provider is None:
@@ -163,25 +168,17 @@ class Injector(
             cause :exc:`ValueError` exception.
         """
         if env is not None:
-            parent_env = self.__get_parent_env()
-            if parent_env is not None:
+            parent_env = self._env
+            if parent_env is not None and parent_env != env:
                 raise ValueError(
-                    "environment was already set by parent: {}".
-                    format(parent_env)
+                    "scoped() got an invalid value for parameter 'env': expected {!r} or None, got {!r}"
+                    .format(parent_env, env)
                 )
         injector = self.__class__(self._provider, env=env or self._env)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
         return injector
-
-    def __get_parent_env(self):
-        parent = self
-        while parent is not None:
-            env = parent._env  # pylint: disable=protected-access
-            if env is not None:
-                return env
-            parent = parent._parent  # pylint: disable=protected-access
 
     def close(self) -> Optional[Awaitable[None]]:
         """Close this injector.
@@ -191,24 +188,28 @@ class Injector(
         It also cleans up resources acquired by all generator-based object
         factories that were used.
         """
-
-        def do_close():
-            self._provider = None
+        if self._provider is not None:
+            provider = self._provider
+            awaitables = []
             for child in self._children:
-                child.close()
+                maybe_awaitable = child.close()
+                if maybe_awaitable is not None:
+                    awaitables.append(maybe_awaitable)
             for instance in self._cache.values():
-                instance.close()
+                maybe_awaitable = instance.close()
+                if maybe_awaitable is not None:
+                    awaitables.append(maybe_awaitable)
+            if not provider.has_awaitables():
+                self._provider = None
+            else:
 
-        async def do_async_close():
-            self._provider = None
-            for child in self._children:
-                await child.close()
-            for instance in self._cache.values():
-                maybe_coroutine = instance.close()
-                if inspect.iscoroutine(maybe_coroutine):
-                    await maybe_coroutine
+                async def do_async_close(awaitables):
+                    self._provider = None
+                    for awaitable in awaitables:
+                        await awaitable
 
-        if self._provider is not None:  # FIXME: docs, quickstart, app.shutdown() required this if to work
-            if not self._provider.has_awaitables():
-                return do_close()
-            return do_async_close()
+                return do_async_close(awaitables)
+
+    def is_closed(self):
+        """Return True if this injector was closed or False otherwise."""
+        return self._provider is None
