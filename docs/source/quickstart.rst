@@ -788,3 +788,120 @@ That will work with unchanged application code from previous example.
     >>> app.list()
     []
     >>> app.shutdown()
+
+Using multiple providers
+------------------------
+
+Sometimes single provider object may not be good enough. Especially, when
+there are dozens of object factory functions to be registered, possible in
+several separate modules. For example, based on our application, different
+module for storages and different for use cases may be needed at some point
+in time. So now let's rewrite our application to use two different provider
+objects.
+
+We'll start by creating module for our storage provider. It will look like
+this:
+
+.. testcode::
+
+    from pydio.api import Provider
+
+    storage_provider = Provider()
+
+    @storage_provider.provides(ITodoItemStorage, scope='app')
+    def make_in_memory_todo_storage():
+        return InMemoryTodoStorage()
+
+    @storage_provider.provides(ITodoItemStorage, env='testing', scope='app')
+    def make_storage_mock():
+        return ABCMock('storage_mock', ITodoItemStorage)
+
+    @storage_provider.provides('database', env='production', scope='app')
+    def make_database():
+        return SQLiteDatabase(':memory:').connect()
+
+    @storage_provider.provides(ITodoItemStorage, env='production', scope='action')
+    def make_sqlite_todo_storage(injector):
+        connection = injector.inject('database')  # (2)
+        try:
+            yield SQLiteTodoStorage(connection)  # (3)
+        except Exception:
+            connection.close()
+        else:
+            connection.commit()
+
+And now, let's make separate module for our use case provider:
+
+.. testcode::
+
+    from pydio.api import Provider
+
+    use_case_provider = Provider()
+
+    @use_case_provider.provides(CreateTodo, scope='action')
+    def make_create_todo(injector: Injector):
+        return CreateTodo(injector.inject(ITodoItemStorage))
+
+    @use_case_provider.provides(CompleteTodo, scope='action')
+    def make_complete_todo(injector: Injector):
+        return CompleteTodo(injector.inject(ITodoItemStorage))
+
+    @use_case_provider.provides(ListTodos, scope='action')
+    def make_list_todos(injector: Injector):
+        return ListTodos(injector.inject(ITodoItemStorage))
+
+    @use_case_provider.provides(DeleteTodo, scope='action')
+    def make_delete_todos(injector: Injector):
+        return DeleteTodo(injector.inject(ITodoItemStorage))
+
+To make a use of those two distinct providers we just need to create yet
+another provider and attach previously created two providers to it using
+:meth:`pydio.provider.Provider.attach` method:
+
+.. testcode::
+
+    provider = Provider()
+    provider.attach(storage_provider)
+    provider.attach(use_case_provider)
+
+    injector = Injector(provider)
+
+    class TodoApplication:
+
+        def __init__(self, env):
+            self._injector = injector.scoped('app', env=env)
+
+        def create(self, title: str, description: str):
+            with self._injector.scoped('action') as injector:
+                injector.inject(CreateTodo).invoke(title, description)
+
+        def complete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(CompleteTodo).invoke(item_uuid)
+
+        def list(self) -> List[dict]:
+            with self._injector.scoped('action') as injector:
+                return [x for x in injector.inject(ListTodos).invoke()]
+
+        def delete(self, item_uuid: uuid.UUID):
+            with self._injector.scoped('action') as injector:
+                injector.inject(DeleteTodo).invoke(item_uuid)
+
+        def shutdown(self):
+            self._injector.close()
+
+.. doctest::
+    :hide:
+
+    >>> app = TodoApplication('production')
+    >>> app.create('shopping', 'buy some milk')
+    >>> items = app.list()
+    >>> items
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': False}]
+    >>> app.complete(items[0]['uuid'])
+    >>> app.list()
+    [{'uuid': ..., 'created': ..., 'title': 'shopping', 'description': 'buy some milk', 'done': True}]
+    >>> app.delete(items[0]['uuid'])
+    >>> app.list()
+    []
+    >>> app.shutdown()
