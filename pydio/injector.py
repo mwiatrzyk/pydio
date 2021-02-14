@@ -122,6 +122,11 @@ class Injector(
     def _parent(self, value):
         self.__parent = weakref.ref(value)
 
+    @property
+    def env(self):
+        """Environment assigned to this injector."""
+        return self._env
+
     def inject(self, key):
         """See :class:`IInjector.inject`."""
         if self._provider is None:
@@ -143,17 +148,33 @@ class Injector(
         self._cache[key] = instance
         return instance.get_instance()
 
-    def scoped(self, scope: Hashable) -> 'Injector':
+    def scoped(self, scope: Hashable, env: Hashable = None) -> 'Injector':
         """Create scoped injector that is a child of current one.
 
-        Scoped injectors can only operate on :class:`IUnboundFactory` objects
-        with :attr:`IUnboundFactory.scope` attribute being equal to given
-        scope.
+        Scoped injectors can only operate on
+        :class:`pydio.base.IUnboundFactory` objects with
+        :attr:`pydio.base.IUnboundFactory.scope` attribute being equal to
+        given scope.
 
         :param scope:
             User-defined scope name.
+
+        :param env:
+            User-defined environment name for newly created injector and all
+            its descendants.
+
+            This option is applicable only if none of the ancestors of newly
+            created injector has environment set. Otherwise, setting this will
+            cause :exc:`ValueError` exception.
         """
-        injector = self.__class__(self._provider)
+        if env is not None:
+            parent_env = self._env
+            if parent_env is not None and parent_env != env:
+                raise ValueError(
+                    "scoped() got an invalid value for parameter 'env': expected {!r} or None, got {!r}"
+                    .format(parent_env, env)
+                )
+        injector = self.__class__(self._provider, env=env or self._env)
         self._children.append(injector)
         injector._parent = self  # pylint: disable=protected-access
         injector._scope = scope  # pylint: disable=protected-access
@@ -167,23 +188,28 @@ class Injector(
         It also cleans up resources acquired by all generator-based object
         factories that were used.
         """
-
-        def do_close():
-            self._provider = None
+        if self._provider is not None:
+            provider = self._provider
+            awaitables = []
             for child in self._children:
-                child.close()
+                maybe_awaitable = child.close()
+                if maybe_awaitable is not None:
+                    awaitables.append(maybe_awaitable)
             for instance in self._cache.values():
-                instance.close()
+                maybe_awaitable = instance.close()
+                if maybe_awaitable is not None:
+                    awaitables.append(maybe_awaitable)
+            if not provider.has_awaitables():
+                self._provider = None
+            else:
 
-        async def do_async_close():
-            self._provider = None
-            for child in self._children:
-                await child.close()
-            for instance in self._cache.values():
-                maybe_coroutine = instance.close()
-                if inspect.iscoroutine(maybe_coroutine):
-                    await maybe_coroutine
+                async def do_async_close(awaitables):
+                    self._provider = None
+                    for awaitable in awaitables:
+                        await awaitable
 
-        if not self._provider.has_awaitables():
-            return do_close()
-        return do_async_close()
+                return do_async_close(awaitables)
+
+    def is_closed(self):
+        """Return True if this injector was closed or False otherwise."""
+        return self._provider is None
