@@ -1,4 +1,4 @@
-0.1.0 (2021-02-13)
+0.1.0 (2021-02-15)
 ------------------
 
 **Added**
@@ -7,6 +7,11 @@
   * Add **env** parameter to :meth:`pydio.injector.Injector.scoped` method
   * Add locks to make :class:`pydio.injector.Injector` and
     :class:`pydio.provider.Provider` thread-safe
+
+**Changed**
+
+  * Part of :class:`pydio.injector.Injector` interface made abstract in
+    :class:`pydio.base.IInjector`
 
 **Other**
 

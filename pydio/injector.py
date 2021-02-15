@@ -8,13 +8,11 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-import contextlib
-import inspect
 import threading
 import weakref
 from typing import Awaitable, Hashable, Optional
 
-from . import _compat, exc
+from . import exc
 from .base import IInjector, IUnboundFactoryRegistry
 
 

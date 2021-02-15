@@ -11,8 +11,8 @@
 """Interface definitions."""
 
 import abc
-import inspect
 import contextlib
+import inspect
 from typing import Awaitable, Hashable, Optional, TypeVar, Union
 
 from . import _compat
@@ -20,7 +20,9 @@ from . import _compat
 T = TypeVar('T')
 
 
-class IInjector(contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager):
+class IInjector(
+    contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager
+):
     """Definition of injector interface."""
 
     def __exit__(self, *args):
