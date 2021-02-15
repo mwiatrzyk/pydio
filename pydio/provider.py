@@ -8,6 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import threading
 from typing import Hashable
 
 from . import _unbound_factories, exc
@@ -20,6 +21,7 @@ class Provider(IUnboundFactoryRegistry):
     :meth:`IInjector.inject`."""
 
     def __init__(self):
+        self._lock = threading.Lock()
         self._unbound_factories = {}
 
     def _check_key_availability(self, key, env):
@@ -34,17 +36,19 @@ class Provider(IUnboundFactoryRegistry):
 
     def get(self, key, env=None):
         """See :meth:`IUnboundFactoryRegistry.get`."""
-        envs = self._unbound_factories.get(key, {})
-        found = envs.get(env)
-        if found is None and env != None:
-            return envs.get(None)
-        return found
+        with self._lock:
+            envs = self._unbound_factories.get(key, {})
+            found = envs.get(env)
+            if found is None and env is not None:
+                return envs.get(None)
+            return found
 
     def has_awaitables(self):
         """See :meth:`IUnboundFactoryRegistry.has_awaitables`."""
-        return any(
-            factory.is_awaitable() for factory in self._iter_factory_funcs()
-        )
+        with self._lock:
+            return any(
+                factory.is_awaitable() for factory in self._iter_factory_funcs()
+            )
 
     def attach(self, provider: 'Provider'):
         """Attach given provider to this provider.
@@ -54,11 +58,12 @@ class Provider(IUnboundFactoryRegistry):
 
         Use this if you need to split your providers across multiple modules.
         """
-        for key, envs in provider._unbound_factories.items():  # pylint: disable=protected-access
-            for env, unbound_factory in envs.items():
-                self._check_key_availability(key, env)
-                self._unbound_factories.setdefault(key,
-                                                   {})[env] = unbound_factory
+        with self._lock:
+            for key, envs in provider._unbound_factories.items():  # pylint: disable=protected-access
+                for env, unbound_factory in envs.items():
+                    self._check_key_availability(key, env)
+                    self._unbound_factories.setdefault(key, {}
+                                                       )[env] = unbound_factory
 
     def register_func(self, key, func, scope=None, env=None):
         """Register user factory function.
@@ -80,9 +85,10 @@ class Provider(IUnboundFactoryRegistry):
         :param env:
             Optional environment to be assigned
         """
-        self._check_key_availability(key, env)
-        self._unbound_factories.setdefault(key, {})[env] =\
-            _unbound_factories.UnboundFunctionFactory(func, key, scope=scope, env=env)
+        with self._lock:
+            self._check_key_availability(key, env)
+            self._unbound_factories.setdefault(key, {})[env] =\
+                _unbound_factories.UnboundFunctionFactory(func, key, scope=scope, env=env)
 
     def register_instance(self, key, value, scope=None, env=None):
         """Same as :meth:`register_func`, but for registration of constant
@@ -91,9 +97,10 @@ class Provider(IUnboundFactoryRegistry):
         If your application has some global configuration data you want to
         inject using PyDio - that's the method you should use.
         """
-        self._check_key_availability(key, env)
-        self._unbound_factories.setdefault(key, {})[env] =\
-            _unbound_factories.UnboundInstanceFactory(value, scope=scope, env=env)
+        with self._lock:
+            self._check_key_availability(key, env)
+            self._unbound_factories.setdefault(key, {})[env] =\
+                _unbound_factories.UnboundInstanceFactory(value, scope=scope, env=env)
 
     def provides(self, key, scope=None, env=None):
         """Same as :meth:`register_func`, but to be used as a decorator.

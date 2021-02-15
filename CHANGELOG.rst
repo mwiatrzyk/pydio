@@ -5,6 +5,12 @@
 
   * Add quickstart tutorial to documentation
   * Add **env** parameter to :meth:`pydio.injector.Injector.scoped` method
+  * Add locks to make :class:`pydio.injector.Injector` and
+    :class:`pydio.provider.Provider` thread-safe
+
+**Other**
+
+  * Small cleanup in :mod:`pydio.base` module regarding annotations
 
 0.1.0rc4 (2021-02-10)
 ---------------------

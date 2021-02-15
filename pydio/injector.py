@@ -10,6 +10,7 @@
 # ---------------------------------------------------------------------------
 import contextlib
 import inspect
+import threading
 import weakref
 from typing import Awaitable, Hashable, Optional
 
@@ -40,6 +41,7 @@ class Injector(
         self._provider = provider
         self._env = env
         self._cache = {}
+        self._lock = threading.RLock()
         self._scope = None
         self._children = []
         self.__parent = None
@@ -69,24 +71,27 @@ class Injector(
 
     def inject(self, key):
         """See :class:`IInjector.inject`."""
-        if self._provider is None:
-            raise self.AlreadyClosedError()
         if key in self._cache:
             return self._cache[key].get_instance()
-        unbound_instance = self._provider.get(key, self._env)
-        if unbound_instance is None:
-            raise self.NoProviderFoundError(key=key, env=self._env)
-        if unbound_instance.scope != self._scope:
-            if self._parent is not None:
-                return self._parent.inject(key)
-            raise self.OutOfScopeError(
-                key=key,
-                scope=self._scope,
-                required_scope=unbound_instance.scope,
-            )
-        instance = unbound_instance.bind(self)
-        self._cache[key] = instance
-        return instance.get_instance()
+        with self._lock:
+            if self.is_closed():
+                raise self.AlreadyClosedError()
+            if key in self._cache:
+                return self._cache[key].get_instance()
+            unbound_instance = self._provider.get(key, self._env)
+            if unbound_instance is None:
+                raise self.NoProviderFoundError(key=key, env=self._env)
+            if unbound_instance.scope != self._scope:
+                if self._parent is not None:
+                    return self._parent.inject(key)
+                raise self.OutOfScopeError(
+                    key=key,
+                    scope=self._scope,
+                    required_scope=unbound_instance.scope,
+                )
+            instance = unbound_instance.bind(self)
+            self._cache[key] = instance
+            return instance.get_instance()
 
     def scoped(self, scope: Hashable, env: Hashable = None) -> 'Injector':
         """Create scoped injector that is a child of current one.
@@ -114,11 +119,12 @@ class Injector(
                     "scoped() got an invalid value for parameter 'env': expected {!r} or None, got {!r}"
                     .format(parent_env, env)
                 )
-        injector = self.__class__(self._provider, env=env or self._env)
-        self._children.append(injector)
-        injector._parent = self  # pylint: disable=protected-access
-        injector._scope = scope  # pylint: disable=protected-access
-        return injector
+        with self._lock:
+            injector = self.__class__(self._provider, env=env or self._env)
+            self._children.append(injector)
+            injector._parent = self  # pylint: disable=protected-access
+            injector._scope = scope  # pylint: disable=protected-access
+            return injector
 
     def close(self) -> Optional[Awaitable[None]]:
         """Close this injector.
@@ -129,26 +135,27 @@ class Injector(
         factories that were used.
         """
         if self._provider is not None:
-            provider = self._provider
-            awaitables = []
-            for child in self._children:
-                maybe_awaitable = child.close()
-                if maybe_awaitable is not None:
-                    awaitables.append(maybe_awaitable)
-            for instance in self._cache.values():
-                maybe_awaitable = instance.close()
-                if maybe_awaitable is not None:
-                    awaitables.append(maybe_awaitable)
-            if not provider.has_awaitables():
-                self._provider = None
-            else:
-
-                async def do_async_close(awaitables):
+            with self._lock:
+                provider = self._provider
+                awaitables = []
+                for child in self._children:
+                    maybe_awaitable = child.close()
+                    if maybe_awaitable is not None:
+                        awaitables.append(maybe_awaitable)
+                for instance in self._cache.values():
+                    maybe_awaitable = instance.close()
+                    if maybe_awaitable is not None:
+                        awaitables.append(maybe_awaitable)
+                if not provider.has_awaitables():
                     self._provider = None
-                    for awaitable in awaitables:
-                        await awaitable
+                else:
 
-                return do_async_close(awaitables)
+                    async def do_async_close(awaitables):
+                        self._provider = None
+                        for awaitable in awaitables:
+                            await awaitable
+
+                    return do_async_close(awaitables)
 
     def is_closed(self):
         """Return True if this injector was closed or False otherwise."""

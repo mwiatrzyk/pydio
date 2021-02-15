@@ -11,24 +11,16 @@
 """Interface definitions."""
 
 import abc
-from typing import Awaitable, Hashable, Optional, Type, TypeVar, Union, overload
+from typing import Awaitable, Hashable, Optional, TypeVar, Union
 
-T, U = TypeVar('T'), TypeVar('U')
+T = TypeVar('T')
 
 
 class IInjector(abc.ABC):
     """Definition of injector interface."""
 
-    @overload
-    def inject(self, key: Type[T]) -> Union[T, Awaitable[T]]:
-        pass
-
-    @overload
-    def inject(self, key: Hashable) -> Union[U, Awaitable[U]]:
-        pass
-
     @abc.abstractmethod
-    def inject(self, key):
+    def inject(self, key: Hashable) -> Union[T, Awaitable[T]]:
         """Create and return object for given hashable key.
 
         On success, this method returns created object or awaitable pointing
@@ -57,16 +49,8 @@ class IFactory(abc.ABC):
     but never both).
     """
 
-    @overload
-    def get_instance(self) -> Optional[Union[T, Awaitable[T]]]:
-        pass
-
-    @overload
-    def get_instance(self) -> Optional[Union[U, Awaitable[U]]]:
-        pass
-
     @abc.abstractmethod
-    def get_instance(self):
+    def get_instance(self) -> Optional[Union[T, Awaitable[T]]]:
         """Create and return target object.
 
         Value returned by this method is later also returned by
@@ -124,20 +108,10 @@ class IUnboundFactoryRegistry(abc.ABC):
     :meth:`IInjector.inject` call.
     """
 
-    @overload
-    def get(self,
-            key: Type[T],
-            env: Hashable = None) -> Optional[IUnboundFactory]:
-        pass
-
-    @overload
+    @abc.abstractmethod
     def get(self,
             key: Hashable,
             env: Hashable = None) -> Optional[IUnboundFactory]:
-        pass
-
-    @abc.abstractmethod
-    def get(self, key, env=None):
         """Get :class:`IUnboundFactory` registered for given key and
         environment (if given).
 
