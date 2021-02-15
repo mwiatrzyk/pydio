@@ -18,10 +18,7 @@ from . import _compat, exc
 from .base import IInjector, IUnboundFactoryRegistry
 
 
-class Injector(
-    IInjector, contextlib.AbstractContextManager,
-    _compat.AbstractAsyncContextManager
-):
+class Injector(IInjector):
     """Dependency injector main class.
 
     :param provider:
@@ -46,14 +43,6 @@ class Injector(
         self._children = []
         self.__parent = None
 
-    def __exit__(self, *args):
-        self.close()
-
-    async def __aexit__(self, *args):
-        maybe_coroutine = self.close()
-        if inspect.iscoroutine(maybe_coroutine):
-            await maybe_coroutine
-
     @property
     def _parent(self):
         if self.__parent is not None:
@@ -65,7 +54,7 @@ class Injector(
         self.__parent = weakref.ref(value)
 
     @property
-    def env(self):
+    def env(self) -> Optional[Hashable]:
         """Environment assigned to this injector."""
         return self._env
 
@@ -93,25 +82,8 @@ class Injector(
             self._cache[key] = instance
             return instance.get_instance()
 
-    def scoped(self, scope: Hashable, env: Hashable = None) -> 'Injector':
-        """Create scoped injector that is a child of current one.
-
-        Scoped injectors can only operate on
-        :class:`pydio.base.IUnboundFactory` objects with
-        :attr:`pydio.base.IUnboundFactory.scope` attribute being equal to
-        given scope.
-
-        :param scope:
-            User-defined scope name.
-
-        :param env:
-            User-defined environment name for newly created injector and all
-            its descendants.
-
-            This option is applicable only if none of the ancestors of newly
-            created injector has environment set. Otherwise, setting this will
-            cause :exc:`ValueError` exception.
-        """
+    def scoped(self, scope: Hashable, env: Hashable = None) -> IInjector:
+        """See :meth:`pydio.base.IInjector.scoped`."""
         if env is not None:
             parent_env = self._env
             if parent_env is not None and parent_env != env:
@@ -127,13 +99,7 @@ class Injector(
             return injector
 
     def close(self) -> Optional[Awaitable[None]]:
-        """Close this injector.
-
-        Closing injector invalidates injector and makes it unusable.
-
-        It also cleans up resources acquired by all generator-based object
-        factories that were used.
-        """
+        """See :meth:`pydio.base.IInjector.close`."""
         if self._provider is not None:
             with self._lock:
                 provider = self._provider
@@ -157,7 +123,7 @@ class Injector(
 
                     return do_async_close(awaitables)
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         """Return True if this injector was closed or False otherwise."""
         return self._provider is None
 

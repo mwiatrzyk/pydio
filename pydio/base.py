@@ -11,13 +11,25 @@
 """Interface definitions."""
 
 import abc
+import inspect
+import contextlib
 from typing import Awaitable, Hashable, Optional, TypeVar, Union
+
+from . import _compat
 
 T = TypeVar('T')
 
 
-class IInjector(abc.ABC):
+class IInjector(contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager):
     """Definition of injector interface."""
+
+    def __exit__(self, *args):
+        self.close()
+
+    async def __aexit__(self, *args):
+        maybe_coroutine = self.close()
+        if inspect.iscoroutine(maybe_coroutine):
+            await maybe_coroutine
 
     @abc.abstractmethod
     def inject(self, key: Hashable) -> Union[T, Awaitable[T]]:
@@ -36,6 +48,39 @@ class IInjector(abc.ABC):
 
             Please be aware that same key has to be used in provider during
             registration of object factory.
+        """
+
+    @abc.abstractmethod
+    def scoped(self, scope: Hashable, env: Hashable = None) -> 'IInjector':
+        """Create scoped injector that is a child of current one.
+
+        Scoped injectors can only operate on
+        :class:`pydio.base.IUnboundFactory` objects with
+        :attr:`pydio.base.IUnboundFactory.scope` attribute being equal to
+        given scope.
+
+        :param scope:
+            User-defined scope name.
+
+        :param env:
+            User-defined environment name for newly created injector and all
+            its descendants.
+
+            This option is applicable only if none of the ancestors of newly
+            created injector has environment set. Otherwise, setting this will
+            cause :exc:`ValueError` exception.
+        """
+
+    @abc.abstractmethod
+    def close(self) -> Optional[Awaitable[None]]:
+        """Close this injector.
+
+        Closing injector invalidates injector and makes it unusable.
+
+        It also cleans up internal cache by calling :meth:`IFactory.close`
+        for each factory being in use by this injector. If this injector has
+        children injectors (created by calling :meth:`scoped` method) then
+        those are closed as well (recursively).
         """
 
 
