@@ -36,66 +36,6 @@ class Injector(
         See :meth:`IUnboundFactoryRegistry.get` for more details.
     """
 
-    class NoProviderFoundError(exc.InjectorError):
-        """Raised when there was no matching provider found for given key.
-
-        :param key:
-            Searched key
-
-        :param env:
-            Searched environment
-        """
-        message_template = "No provider found for: key={self.key!r}, env={self.env!r}"
-
-        def __init__(self, key, env):
-            super().__init__(key=key, env=env)
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-        @property
-        def env(self) -> Hashable:
-            return self.params['env']
-
-    class OutOfScopeError(exc.InjectorError):
-        """Raised when there was attempt to create object that was registered
-        for different scope.
-
-        :param key:
-            Searched key
-
-        :param scope:
-            Injector's own scope
-
-        :param required_scope:
-            Required scope
-        """
-        message_template =\
-            "Cannot inject {self.key!r} due to scope mismatch: "\
-            "{self.required_scope!r} (required) != {self.scope!r} (owned)"
-
-        def __init__(self, key, scope, required_scope):
-            super().__init__(
-                key=key, scope=scope, required_scope=required_scope
-            )
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-        @property
-        def scope(self) -> Hashable:
-            return self.params['scope']
-
-        @property
-        def required_scope(self) -> Hashable:
-            return self.params['required_scope']
-
-    class AlreadyClosedError(exc.InjectorError):
-        """Raised when operation on a closed injector was performed."""
-        message_template = "This injector was already closed"
-
     def __init__(self, provider: IUnboundFactoryRegistry, env: Hashable = None):
         self._provider = provider
         self._env = env
@@ -213,3 +153,63 @@ class Injector(
     def is_closed(self):
         """Return True if this injector was closed or False otherwise."""
         return self._provider is None
+
+    class NoProviderFoundError(exc.InjectorError):
+        """Raised when there was no matching provider found for given key.
+
+        :param key:
+            Searched key
+
+        :param env:
+            Searched environment
+        """
+        message_template = "No provider found for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def env(self) -> Hashable:
+            return self.params['env']
+
+    class OutOfScopeError(exc.InjectorError):
+        """Raised when there was attempt to create object that was registered
+        for different scope.
+
+        :param key:
+            Searched key
+
+        :param scope:
+            Injector's own scope
+
+        :param required_scope:
+            Required scope
+        """
+        message_template =\
+            "Cannot inject {self.key!r} due to scope mismatch: "\
+            "{self.required_scope!r} (required) != {self.scope!r} (owned)"
+
+        def __init__(self, key, scope, required_scope):
+            super().__init__(
+                key=key, scope=scope, required_scope=required_scope
+            )
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def scope(self) -> Hashable:
+            return self.params['scope']
+
+        @property
+        def required_scope(self) -> Hashable:
+            return self.params['required_scope']
+
+    class AlreadyClosedError(exc.InjectorError):
+        """Raised when operation on a closed injector was performed."""
+        message_template = "This injector was already closed"

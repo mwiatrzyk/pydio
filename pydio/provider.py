@@ -19,29 +19,6 @@ class Provider(IUnboundFactoryRegistry):
     them with particular key, that can later be used by
     :meth:`IInjector.inject`."""
 
-    class DoubleRegistrationError(exc.ProviderError):
-        """Raised when same ``(key, env)`` tuple was used twice during
-        registration.
-
-        :param key:
-            Registered key
-
-        :param env:
-            Registered environment
-        """
-        message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
-
-        def __init__(self, key, env):
-            super().__init__(key=key, env=env)
-
-        @property
-        def key(self) -> Hashable:
-            return self.params['key']
-
-        @property
-        def env(self) -> Hashable:
-            return self.params['env']
-
     def __init__(self):
         self._unbound_factories = {}
 
@@ -139,3 +116,26 @@ class Provider(IUnboundFactoryRegistry):
             return func
 
         return decorator
+
+    class DoubleRegistrationError(exc.ProviderError):
+        """Raised when same ``(key, env)`` tuple was used twice during
+        registration.
+
+        :param key:
+            Registered key
+
+        :param env:
+            Registered environment
+        """
+        message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
+
+        def __init__(self, key, env):
+            super().__init__(key=key, env=env)
+
+        @property
+        def key(self) -> Hashable:
+            return self.params['key']
+
+        @property
+        def env(self) -> Hashable:
+            return self.params['env']
