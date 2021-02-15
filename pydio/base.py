@@ -11,24 +11,30 @@
 """Interface definitions."""
 
 import abc
-from typing import Awaitable, Hashable, Optional, Type, TypeVar, Union, overload
+import contextlib
+import inspect
+from typing import Awaitable, Hashable, Optional, TypeVar, Union
 
-T, U = TypeVar('T'), TypeVar('U')
+from . import _compat
+
+T = TypeVar('T')
 
 
-class IInjector(abc.ABC):
+class IInjector(
+    contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager
+):
     """Definition of injector interface."""
 
-    @overload
-    def inject(self, key: Type[T]) -> Union[T, Awaitable[T]]:
-        pass
+    def __exit__(self, *args):
+        self.close()
 
-    @overload
-    def inject(self, key: Hashable) -> Union[U, Awaitable[U]]:
-        pass
+    async def __aexit__(self, *args):
+        maybe_coroutine = self.close()
+        if inspect.iscoroutine(maybe_coroutine):
+            await maybe_coroutine
 
     @abc.abstractmethod
-    def inject(self, key):
+    def inject(self, key: Hashable) -> Union[T, Awaitable[T]]:
         """Create and return object for given hashable key.
 
         On success, this method returns created object or awaitable pointing
@@ -46,6 +52,39 @@ class IInjector(abc.ABC):
             registration of object factory.
         """
 
+    @abc.abstractmethod
+    def scoped(self, scope: Hashable, env: Hashable = None) -> 'IInjector':
+        """Create scoped injector that is a child of current one.
+
+        Scoped injectors can only operate on
+        :class:`pydio.base.IUnboundFactory` objects with
+        :attr:`pydio.base.IUnboundFactory.scope` attribute being equal to
+        given scope.
+
+        :param scope:
+            User-defined scope name.
+
+        :param env:
+            User-defined environment name for newly created injector and all
+            its descendants.
+
+            This option is applicable only if none of the ancestors of newly
+            created injector has environment set. Otherwise, setting this will
+            cause :exc:`ValueError` exception.
+        """
+
+    @abc.abstractmethod
+    def close(self) -> Optional[Awaitable[None]]:
+        """Close this injector.
+
+        Closing injector invalidates injector and makes it unusable.
+
+        It also cleans up internal cache by calling :meth:`IFactory.close`
+        for each factory being in use by this injector. If this injector has
+        children injectors (created by calling :meth:`scoped` method) then
+        those are closed as well (recursively).
+        """
+
 
 class IFactory(abc.ABC):
     """Interface for bound factories.
@@ -57,16 +96,8 @@ class IFactory(abc.ABC):
     but never both).
     """
 
-    @overload
-    def get_instance(self) -> Optional[Union[T, Awaitable[T]]]:
-        pass
-
-    @overload
-    def get_instance(self) -> Optional[Union[U, Awaitable[U]]]:
-        pass
-
     @abc.abstractmethod
-    def get_instance(self):
+    def get_instance(self) -> Optional[Union[T, Awaitable[T]]]:
         """Create and return target object.
 
         Value returned by this method is later also returned by
@@ -124,20 +155,10 @@ class IUnboundFactoryRegistry(abc.ABC):
     :meth:`IInjector.inject` call.
     """
 
-    @overload
-    def get(self,
-            key: Type[T],
-            env: Hashable = None) -> Optional[IUnboundFactory]:
-        pass
-
-    @overload
+    @abc.abstractmethod
     def get(self,
             key: Hashable,
             env: Hashable = None) -> Optional[IUnboundFactory]:
-        pass
-
-    @abc.abstractmethod
-    def get(self, key, env=None):
         """Get :class:`IUnboundFactory` registered for given key and
         environment (if given).
 
