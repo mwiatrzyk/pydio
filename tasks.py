@@ -9,6 +9,10 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 
+import collections
+import subprocess
+import typing
+
 import invoke
 
 import pydio
@@ -208,3 +212,37 @@ def clean(ctx):
     ctx.run('rm -rf *.egg-info')
     ctx.run('rm -rf .eggs')
     ctx.run('rm -rf reports')
+
+
+@invoke.task
+def ci_tag_release_candidate(ctx):
+    """Mark current revision as next release candidate.
+
+    This command reads git tags, finds most recent tag, calculates next release
+    candidate tag and issues `git tag` to tag current commit with newly
+    calculated tag.
+    """
+    Version = collections.namedtuple('Version', 'major,minor,patch,rc')
+
+    def iter_versions() -> typing.Iterator[Version]:
+        p = subprocess.run(['git', 'tag'], capture_output=True, encoding='utf-8')
+        for raw_version in p.stdout.strip().split('\n'):
+            major, minor, patch = raw_version.split('.', 2)
+            major = major.lstrip('v')
+            rc = None
+            if 'rc' in patch:
+                patch, rc = patch.split('rc')
+            yield Version(int(major), int(minor), int(patch), int(rc) if rc is not None else rc)
+
+    def format_version(v: Version) -> str:
+        if v.rc:
+            return f"v{v.major}.{v.minor}.{v.patch}rc{v.rc}"
+        return f"v{v.major}.{v.minor}.{v.patch}"
+
+    latest_version = max(iter_versions(), key=lambda x: (x.major, x.minor, x.patch, x.rc or 999999))
+    if latest_version.rc:
+        next_version = Version(latest_version.major, latest_version.minor, latest_version.patch, latest_version.rc + 1)
+    else:
+        next_version = Version(latest_version.major, latest_version.minor+1, 0, 1)
+
+    subprocess.run(['git', 'tag', format_version(next_version)])
