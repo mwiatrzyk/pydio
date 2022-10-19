@@ -14,6 +14,15 @@ jobs:
       - run: |
           pipenv --python <<parameters.version>> install --skip-lock --dev
           pipenv run inv tox -e <<parameters.toxenv>>
+  deploy-release-candidate:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run: |
+          pipenv --python=3.9 install --skip-lock --dev
+          pipenv run inv ci-tag-release-candidate
+          git push --tags
 
 workflows:
   test:
@@ -34,3 +43,12 @@ workflows:
           name: "test-py39"
           version: "3.9"
           toxenv: "py39"
+      - deploy-release-candidate:
+          requires:
+            - test-py36
+            - test-py37
+            - test-py38
+            - test-py39
+          filters:
+            branches:
+              only: staging
