@@ -96,15 +96,15 @@ You can install PyDio using one of following methods:
 
 You have two options available:
 
-1) Visit `PyDio's ReadTheDocs <https://pydio.readthedocs.io/en/latest/>`_ site
+1) Visit [PyDio's ReadTheDocs](https://pydio.readthedocs.io/en/latest/) site.
 
-2) Take a tour around `functional tests <https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional>`_
+2) Take a tour around [functional tests](https://github.com/mwiatrzyk/pydio/tree/master/tests/functional).
 
 ## License
 
 This project is released under the terms of the MIT license.
 
-See `LICENSE.txt <https://gitlab.com/zef1r/pydio/-/blob/master/LICENSE.txt>`_ for more details.
+See [LICENSE.txt](https://github.com/mwiatrzyk/pydio/blob/master/LICENSE.txt) for more details.
 
 ## Author
 
