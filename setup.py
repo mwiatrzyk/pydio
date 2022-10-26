@@ -14,5 +14,6 @@ import pydio
 
 setuptools.setup(
     name="pydio",
-    version=pydio.__version__
+    version=pydio.__version__,
+    packages=['pydio'],
 )
