@@ -109,7 +109,7 @@ def tox(ctx, parallel=False, env=None):
     """
     args = ['tox']
     if parallel:
-        args.append('-p')
+        args.append('-p=auto')
     if env:
         args.append('-e {}'.format(env))
     ctx.run(' '.join(args))
