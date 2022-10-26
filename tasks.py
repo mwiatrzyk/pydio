@@ -165,13 +165,17 @@ def serve_docs(ctx, host='localhost', port=8000):
     )
 
 
-@invoke.task(help={
-    'rc': 'Create a release candidate instead of regular version'
-})
+@invoke.task(
+    help={'rc': 'Create a release candidate instead of regular version'}
+)
 def release(ctx, rc=False):
     """Create new release."""
-    ctx.run('inv fix-license && (git commit -a -m "chore: update copyright notice in files" || exit 0)')
-    ctx.run('inv fix-formatting && (git commit -a -m "style: run code formatting tools" || exit 0)')
+    ctx.run(
+        'inv fix-license && (git commit -a -m "chore: update copyright notice in files" || exit 0)'
+    )
+    ctx.run(
+        'inv fix-formatting && (git commit -a -m "style: run code formatting tools" || exit 0)'
+    )
     ctx.run('inv check')
     cz = ['cz', 'bump']
     if rc:
