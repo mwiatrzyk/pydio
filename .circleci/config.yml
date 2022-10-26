@@ -31,6 +31,14 @@ workflows:
           name: "test-py37"
           ver_major: "3"
           ver_minor: "7"
+      - test:
+          name: "test-py38"
+          ver_major: "3"
+          ver_minor: "8"
+      - test:
+          name: "test-py39"
+          ver_major: "3"
+          ver_minor: "9"
       #- test:
       #    name: "test-py38"
       #    version: "3.8"
