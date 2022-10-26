@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tasks.py
 #
-# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
@@ -165,22 +165,16 @@ def serve_docs(ctx, host='localhost', port=8000):
     )
 
 
-@invoke.task
-def validate_tag(ctx, tag):
-    """Check CHANGELOG.md and pydio/__init__.py agains given tag."""
-    ctx.run('scripts/tag.py -c {}'.format(tag))
-
-
-@invoke.task(fix)
-def release(ctx, tag_or_version):
-    """Run code fixers and update version in library code.
-
-    This task should be run just before committing the last changes before
-    next release. `tag_or_version` should contain version library will
-    receive in PyPI. This can later be verified in CI with `validate-tag`
-    task.
-    """
-    ctx.run('scripts/tag.py {}'.format(tag_or_version))
+@invoke.task(help={
+    'rc': 'Create a release candidate instead of regular version'
+})
+def release(ctx, rc=False):
+    """Create new release."""
+    ctx.run('inv fix-license && (git commit -a -m "chore: update copyright notice in files" || exit 0)')
+    cz = ['cz', 'bump']
+    if rc:
+        cz.append('--prerelease=rc')
+    print(ctx.run(' '.join(cz)))
 
 
 @invoke.task(build_pkg)
