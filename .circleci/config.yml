@@ -1,0 +1,50 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:<<parameters.ver_major>>.<<parameters.ver_minor>>
+    parameters:
+      ver_minor:
+        type: string
+      ver_major:
+        type: string
+    steps:
+      - checkout
+      - run: |
+          pip install tox
+          tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
+  #deploy-release-candidate:
+  #  docker:
+  #    - image: cimg/python:3.9
+  #  steps:
+  #    - checkout
+  #    - run: |
+  #        pipenv --python=3.9 install --skip-lock --dev
+  #        pipenv run inv ci-tag-release-candidate
+  #        git push --tags
+
+workflows:
+  test:
+    jobs:
+      - test:
+          name: "test-py37"
+          ver_major: "3"
+          ver_minor: "7"
+      #- test:
+      #    name: "test-py38"
+      #    version: "3.8"
+      #    toxenv: "py38"
+      #- test:
+      #    name: "test-py39"
+      #    version: "3.9"
+      #    toxenv: "py39"
+      #- deploy-release-candidate:
+      #    requires:
+      #      - test-py36
+      #      - test-py37
+      #      - test-py38
+      #      - test-py39
+      #    filters:
+      #      branches:
+      #        only: staging
