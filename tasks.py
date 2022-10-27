@@ -187,6 +187,7 @@ def release(ctx, rc=False, dev=False):
         cz.append(f"--devrelease={now.strftime('%Y%m%d%H%M%S')}")
     ctx.run(' '.join(cz))
     ctx.run('inv qa')
+    ctx.run('inv clean')
     if rc or dev:
         ctx.run('inv deploy-test')
     else:
