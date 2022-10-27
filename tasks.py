@@ -15,24 +15,24 @@ import pydio
 
 
 @invoke.task
-def test_unit(ctx):
+def qa_test_unit(ctx):
     """Run unit tests."""
     ctx.run('pytest tests/')
 
 
 @invoke.task
-def test_docs(ctx):
+def qa_test_docs(ctx):
     """Run documentation tests."""
     ctx.run('sphinx-build -M doctest docs/source docs/build')
 
 
-@invoke.task(test_unit, test_docs)
-def test(_):
+@invoke.task(qa_test_unit, qa_test_docs)
+def qa_test(_):
     """Run all tests."""
 
 
 @invoke.task
-def coverage(ctx, fail_under=94):
+def qa_cov(ctx, fail_under=94):
     """Run code coverage check."""
     ctx.run(
         'pytest tests/ --cov=pydio --cov-fail-under={fail_under} '
@@ -44,7 +44,7 @@ def coverage(ctx, fail_under=94):
 
 
 @invoke.task
-def serve_coverage(ctx, host='localhost', port=8000):
+def serve_cov(ctx, host='localhost', port=8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
     ctx.run('inv coverage -f0')
@@ -56,7 +56,7 @@ def serve_coverage(ctx, host='localhost', port=8000):
 
 
 @invoke.task
-def lint_code(ctx):
+def qa_lint_code(ctx):
     """Run linter on source files."""
     args = ['pylint -f colorized --fail-under=9.0 pydio']
     args.extend([
@@ -68,7 +68,7 @@ def lint_code(ctx):
 
 
 @invoke.task
-def lint_tests(ctx):
+def qa_lint_tests(ctx):
     """Run linter on test files."""
     args = ['pylint tests -f colorized --fail-under=9.0']
     args.extend([
@@ -84,13 +84,13 @@ def lint_tests(ctx):
     ctx.run(' '.join(args))
 
 
-@invoke.task(lint_code, lint_tests)
-def lint(_):
+@invoke.task(qa_lint_code, qa_lint_tests)
+def qa_lint(_):
     """Run all linters."""
 
 
-@invoke.task(test, coverage, lint)
-def check(_):
+@invoke.task(qa_test, qa_cov, qa_lint)
+def qa(_):
     """Run all code quality checks."""
 
 
@@ -116,7 +116,7 @@ def tox(ctx, parallel=False, env=None):
 
 
 @invoke.task
-def fix_formatting(ctx):
+def adjust_formatting(ctx):
     """Run code formatting tools."""
     ctx.run(
         'autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --expand-star-imports pydio tests scripts tasks.py'
@@ -126,7 +126,7 @@ def fix_formatting(ctx):
 
 
 @invoke.task
-def fix_license(ctx):
+def adjust_copyright(ctx):
     """Update LICENSE file and license preambles in source files."""
     ctx.run(
         'scripts/licenser/licenser.py . --released={released} --author="{author}" -i "*.py" -i "*.rst" -e "*README.rst" -e "*CHANGELOG.rst" -e "*.git"'
@@ -134,8 +134,8 @@ def fix_license(ctx):
     )
 
 
-@invoke.task(fix_formatting, fix_license)
-def fix(_):
+@invoke.task(adjust_formatting, adjust_copyright)
+def adjust(_):
     """Run all code fixers."""
 
 
@@ -170,12 +170,8 @@ def serve_docs(ctx, host='localhost', port=8000):
 )
 def release(ctx, rc=False):
     """Create new release."""
-    ctx.run(
-        'inv fix-license && (git commit -a -m "chore: update copyright notice in files" || exit 0)'
-    )
-    ctx.run(
-        'inv fix-formatting && (git commit -a -m "style: run code formatting tools" || exit 0)'
-    )
+    ctx.run('scripts/adjust-copyright.sh')
+    ctx.run('scripts/adjust-formatting.sh')
     ctx.run('inv check')
     cz = ['cz', 'bump']
     if rc:
