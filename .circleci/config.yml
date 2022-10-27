@@ -14,15 +14,14 @@ jobs:
       - run: |
           pip install tox
           tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
-  #deploy-release-candidate:
-  #  docker:
-  #    - image: cimg/python:3.9
-  #  steps:
-  #    - checkout
-  #    - run: |
-  #        pipenv --python=3.9 install --skip-lock --dev
-  #        pipenv run inv ci-tag-release-candidate
-  #        git push --tags
+  deploy-dev:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run: |
+          poetry install
+          poetry run inv release --dev
 
 workflows:
   test:
@@ -39,20 +38,11 @@ workflows:
           name: "test-py39"
           ver_major: "3"
           ver_minor: "9"
-      #- test:
-      #    name: "test-py38"
-      #    version: "3.8"
-      #    toxenv: "py38"
-      #- test:
-      #    name: "test-py39"
-      #    version: "3.9"
-      #    toxenv: "py39"
-      #- deploy-release-candidate:
-      #    requires:
-      #      - test-py36
-      #      - test-py37
-      #      - test-py38
-      #      - test-py39
-      #    filters:
-      #      branches:
-      #        only: staging
+      - deploy-dev:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+          filters:
+            branches:
+              only: development
