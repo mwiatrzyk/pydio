@@ -9,6 +9,8 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 
+import datetime
+
 import invoke
 
 import pydio
@@ -148,7 +150,7 @@ def build_docs(ctx):
 @invoke.task
 def build_pkg(ctx):
     """Build distribution package."""
-    ctx.run('python setup.py sdist bdist_wheel')
+    ctx.run('poetry build')
 
 
 @invoke.task(build_docs, build_pkg)
@@ -166,25 +168,37 @@ def serve_docs(ctx, host='localhost', port=8000):
 
 
 @invoke.task(
-    help={'rc': 'Create a release candidate instead of regular version'}
+    help={
+        'rc': 'Create a release candidate instead of regular version',
+        'dev': 'Create a development release instead of regular version'
+    }
 )
-def release(ctx, rc=False):
+def release(ctx, rc=False, dev=False):
     """Create new release."""
+    if rc and dev:
+        raise ValueError("cannot set both --rc and --dev")
     ctx.run('scripts/adjust-copyright.sh')
     ctx.run('scripts/adjust-formatting.sh')
-    ctx.run('inv check')
+    now = datetime.datetime.utcnow()
     cz = ['cz', 'bump']
     if rc:
         cz.append('--prerelease=rc')
-    print(ctx.run(' '.join(cz)))
+    if dev:
+        cz.append(f"--devrelease={now.strftime('%Y%m%d%H%M%S')}")
+    ctx.run(' '.join(cz))
+    ctx.run('inv qa')
+    if rc or dev:
+        ctx.run('inv deploy-test')
+    else:
+        ctx.run('inv deploy-prod')
+    ctx.run('git push')
+    ctx.run('git push --tags')
 
 
 @invoke.task(build_pkg)
 def deploy_test(ctx):
     """Build and deploy library to test PyPI."""
-    ctx.run(
-        'twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*'
-    )
+    ctx.run('twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*')
 
 
 @invoke.task(build_pkg)

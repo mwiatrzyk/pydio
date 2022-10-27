@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pydio"
-version = "0.1.0"
+version = "0.1.0.dev20221027172548"
 description = "Simple and functional dependency injection toolkit for Python"
 authors = [
     "Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>"
@@ -38,10 +38,11 @@ pylint = "^2.15.5"
 isort = "^5.10.1"
 yapf = "^0.32.0"
 autoflake = "^1.7.7"
+twine = "^4.0.1"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.0"
+version = "0.1.0.dev20221027172548"
 tag_format = "v$version"
 update_changelog_on_bump = true
 bump_message = "bump: $current_version -> $new_version"
