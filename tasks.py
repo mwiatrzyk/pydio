@@ -198,7 +198,9 @@ def release(ctx, rc=False, dev=False):
 @invoke.task(build_pkg)
 def deploy_test(ctx):
     """Build and deploy library to test PyPI."""
-    ctx.run('twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*')
+    ctx.run(
+        'twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*'
+    )
 
 
 @invoke.task(build_pkg)
