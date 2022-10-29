@@ -9,7 +9,6 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 
-import datetime
 import os
 
 import invoke
@@ -188,7 +187,8 @@ def bump(ctx, rc=False, dev=False):
         return ctx.run('git tag --sort=-committerdate | head -1').stdout.strip()
 
     def get_devrelease_number():
-        return ctx.run(f'git rev-list --count {get_most_recent_tag()}..HEAD').stdout.strip()
+        return ctx.run(f'git rev-list --count {get_most_recent_tag()}..HEAD'
+                       ).stdout.strip()
 
     if rc and dev:
         raise ValueError("cannot use both --rc and --dev options")
