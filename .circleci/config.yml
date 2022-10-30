@@ -88,12 +88,27 @@ workflows:
           name: "test-py39"
           ver_major: "3"
           ver_minor: "9"
+      - test:
+          name: "test-py310"
+          ver_major: "3"
+          ver_minor: "10"
       - deploy-dev:
           requires:
             - test-py37
             - test-py38
             - test-py39
+            - test-py310
           push_to: development
           filters:
             branches:
               only: development
+      - deploy-rc:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          push_to: staging
+          filters:
+            branches:
+              only: staging
