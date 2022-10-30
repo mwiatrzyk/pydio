@@ -10,4 +10,4 @@
 # ---------------------------------------------------------------------------
 __released__ = 2021
 __author__ = 'Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>'
-__version__ = '0.1.0rc1'
+__version__ = '0.1.0'
