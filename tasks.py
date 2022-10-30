@@ -10,6 +10,7 @@
 # ---------------------------------------------------------------------------
 
 import os
+import re
 
 import invoke
 
@@ -187,8 +188,11 @@ def bump(ctx, rc=False, dev=False):
         return ctx.run('git tag --sort=-committerdate | head -1').stdout.strip()
 
     def get_devrelease_number():
-        return ctx.run(f'git rev-list --count {get_most_recent_tag()}..HEAD'
-                       ).stdout.strip()
+        tag = get_most_recent_tag()
+        m = re.search(r'dev(\d+)$', tag)
+        if m is None:
+            return 1
+        return int(m.group(1)) + 1
 
     if rc and dev:
         raise ValueError("cannot use both --rc and --dev options")
