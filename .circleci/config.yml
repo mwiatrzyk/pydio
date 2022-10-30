@@ -56,6 +56,22 @@ jobs:
       - deploy-test
       - push-to-git:
           branch_name: <<parameters.push_to>>
+  deploy-rc:
+    docker:
+      - image: cimg/python:3.9
+    parameters:
+      push_to:
+        type: string
+    steps:
+      - checkout
+      - configure-git
+      - install-deps
+      - run: poetry run inv bump --rc --dry-run || (circleci-agent step halt)
+      - bump-version:
+          flags: "--rc"
+      - deploy-test
+      - push-to-git:
+          branch_name: <<parameters.push_to>>
 
 workflows:
   test:
