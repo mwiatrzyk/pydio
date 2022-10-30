@@ -172,10 +172,11 @@ def serve_docs(ctx, host='localhost', port=8000):
     help={
         'rc': 'Create a release candidate instead of regular version',
         'dev': 'Create a development release instead of regular version',
-        'dry_run': 'Do not commit anything. Instead, exit with 0 if bump would succeed or with 1 otherwise'
+        'dry_run': 'Do not commit anything. Instead, exit with 0 if bump would succeed or with 1 otherwise',
+        'manual_version': 'Bump to provided manual version'
     }
 )
-def bump(ctx, rc=False, dev=False, dry_run=False):
+def bump(ctx, rc=False, dev=False, dry_run=False, manual_version=None):
     """Bump version and create bump commit.
 
     This command bumps version according to arguments provided. For --rc, it
@@ -204,6 +205,8 @@ def bump(ctx, rc=False, dev=False, dry_run=False):
         args.append(f"--devrelease={get_devrelease_number()}")
     if dry_run:
         args.append('--dry-run')
+    if manual_version:
+        args.append(manual_version)
     ctx.run(' '.join(args))
 
 
