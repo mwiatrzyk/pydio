@@ -21,11 +21,8 @@ commands:
       - run: git config user.name "Maciej Wiatrzyk"
       - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
   push-to-git:
-    parameters:
-      branch_name:
-        type: string
     steps:
-      - run: git push --set-upstream origin <<parameters.branch_name>>
+      - run: git push --set-upstream origin $CIRCLECI_BRANCH
       - run: git push --tags
 
 jobs:
@@ -53,9 +50,8 @@ jobs:
       - install-deps
       - bump-version:
           flags: "--rc"
-      - deploy-test
-      - push-to-git:
-          branch_name: <<parameters.push_to>>
+      #- deploy-test
+      - push-to-git
 
 workflows:
   test:
