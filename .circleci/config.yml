@@ -50,9 +50,6 @@ jobs:
   deploy-rc:
     docker:
       - image: cimg/python:3.9
-    parameters:
-      push_to:
-        type: string
     steps:
       - checkout
       - configure-git
@@ -65,9 +62,6 @@ jobs:
   deploy:
     docker:
       - image: cimg/python:3.9
-    parameters:
-      push_to:
-        type: string
     steps:
       - checkout
       - configure-git
