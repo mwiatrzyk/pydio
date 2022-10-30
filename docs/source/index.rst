@@ -1,7 +1,7 @@
 .. ----------------------------------------------------------------------------
 .. docs/source/index.rst
 ..
-.. Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+.. Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
 .. This file is part of PyDio library documentation
 .. and is released under the terms of the MIT license:
@@ -19,8 +19,8 @@ Welcome to PyDio's documentation!
     :target: https://pypi.org/project/PyDio/
 .. image:: https://img.shields.io/pypi/dm/PyDio
     :target: https://pypi.org/project/PyDio/
-.. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
-    :target: https://codecov.io/gl/zef1r/pydio
+.. image:: https://codecov.io/gh/mwiatrzyk/pydio/branch/master/graph/badge.svg?token=Y6DJDSOR6M
+    :target: https://codecov.io/gh/mwiatrzyk/pydio
 
 About PyDio
 -----------

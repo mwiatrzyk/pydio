@@ -1,0 +1,111 @@
+version: 2.1
+
+commands:
+  install-deps:
+    steps:
+      - run: poetry install -q
+  bump-version:
+    parameters:
+      flags:
+        type: string
+        default: ""
+    steps:
+      - run: poetry run inv adjust
+      - run: poetry run inv bump <<parameters.flags>>
+      - run: poetry run inv qa
+  deploy-test:
+    steps:
+      - run: poetry run inv deploy-test
+  deploy-prod:
+    steps:
+      - run: poetry run inv deploy-prod
+  configure-git:
+    steps:
+      - run: git config user.name "Maciej Wiatrzyk"
+      - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
+  push-to-git:
+    steps:
+      - run: git push --set-upstream origin $CIRCLE_BRANCH
+      - run: git push --tags
+  publish-coverage:
+    steps:
+      - run: poetry run inv qa-cov -f0
+      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
+      - run: chmod +x codecov
+      - run: ./codecov
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:<<parameters.ver_major>>.<<parameters.ver_minor>>
+    parameters:
+      ver_minor:
+        type: string
+      ver_major:
+        type: string
+    steps:
+      - checkout
+      - run: pip install tox
+      - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
+  deploy-rc:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - configure-git
+      - install-deps
+      - bump-version:
+          flags: "--rc"
+      - deploy-test
+      - push-to-git
+      - publish-coverage
+  deploy:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - configure-git
+      - install-deps
+      - bump-version
+      - deploy-test
+      - deploy-prod
+      - push-to-git
+      - publish-coverage
+
+workflows:
+  test:
+    jobs:
+      - test:
+          name: "test-py37"
+          ver_major: "3"
+          ver_minor: "7"
+      - test:
+          name: "test-py38"
+          ver_major: "3"
+          ver_minor: "8"
+      - test:
+          name: "test-py39"
+          ver_major: "3"
+          ver_minor: "9"
+      - test:
+          name: "test-py310"
+          ver_major: "3"
+          ver_minor: "10"
+      - deploy-rc:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          filters:
+            branches:
+              only: /.*\-dev/
+      - deploy:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          filters:
+            branches:
+              only: master

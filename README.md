@@ -1,20 +1,14 @@
-.. image:: https://img.shields.io/pypi/v/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/l/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/dm/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
-    :target: https://codecov.io/gl/zef1r/pydio
+![PyPI](https://img.shields.io/pypi/v/pydio)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydio)
+![PyPI - License](https://img.shields.io/pypi/l/pydio)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pydio)
+[![codecov](https://codecov.io/gh/mwiatrzyk/pydio/branch/master/graph/badge.svg?token=Y6DJDSOR6M)](https://codecov.io/gh/mwiatrzyk/pydio)
 
-=====
-PyDio
-=====
+# PyDio
 
-A simple and functional dependency injection toolkit for Python.
+Simple and functional dependency injection toolkit for Python.
 
-About
-=====
+## About
 
 PyDio aims to be simple, yet still powerful, allowing you to feed
 dependencies inside your application in a flexible way. PyDio design is based
@@ -28,29 +22,37 @@ providers to configure your **key-to-function** mapping, and then you use
 injectors to perform a **lookup** of a specific key and creation of the final
 object.
 
-Here's a simple example::
+Here's a simple example:
 
-    import abc
+```python
+import abc
 
-    from pydio.api import Provider, Injector
+from pydio.api import Provider, Injector
 
-    provider = Provider()
+provider = Provider()
 
-    @provider.provides('greet')
-    def make_greet():
-        return 'Hello, world!'
+@provider.provides('greet')
+def make_greet():
+    return 'Hello, world!'
 
-    def main():
-        injector = Injector(provider)
-        greet_message = injector.inject('greet')
-        print(greet_message)
+def main():
+    injector = Injector(provider)
+    greet_message = injector.inject('greet')
+    print(greet_message)
 
-And if you now call ``main()`` function, then the output will be following::
+if __name__ == '__main__':
+    main()
+```
 
-    Hello, world!
+Now you can save the snippet from above as ``example.py`` file and execute
+to see the output:
 
-Key features
-============
+```shell
+$ python example.py
+Hello, world!
+```
+
+## Key features
 
 * Support for any hashable keys: class objects, strings, ints etc.
 * Support for any type of object factories: function, coroutine, generator,
@@ -63,40 +65,42 @@ Key features
 * No singletons used, so there is no global state...
 * ...but you still can create global injector on your own if you need it :-)
 
-Installation
-============
+## Installation
 
 You can install PyDio using one of following methods:
 
-1) From PyPI (for stable releases)::
+1) From PyPI (for stable releases):
 
+    ```shell
     $ pip install PyDio
+    ```
 
-2) From test PyPI (for stable and development releases)::
+2) From test PyPI (for stable and development releases):
 
+    ```shell
     $ pip install -i https://test.pypi.org/simple/ PyDio
+    ```
 
-3) Directly from source code repository (for all releases)::
+3) Directly from source code repository (for all releases):
 
+    ```shell
     $ pip install git+https://gitlab.com/zef1r/PyDio.git@[branch-or-tag]
+    ```
 
-Documentation
-=============
+## Documentation
 
 You have two options available:
 
-1) Visit `PyDio's ReadTheDocs <https://pydio.readthedocs.io/en/latest/>`_ site
+1) Visit [PyDio's ReadTheDocs](https://pydio.readthedocs.io/en/latest/) site.
 
-2) Take a tour around `functional tests <https://gitlab.com/zef1r/pydio/-/tree/master/tests/functional>`_
+2) Take a tour around [functional tests](https://github.com/mwiatrzyk/pydio/tree/master/tests/functional).
 
-License
-=======
+## License
 
 This project is released under the terms of the MIT license.
 
-See `LICENSE.txt <https://gitlab.com/zef1r/pydio/-/blob/master/LICENSE.txt>`_ for more details.
+See [LICENSE.txt](https://github.com/mwiatrzyk/pydio/blob/master/LICENSE.txt) for more details.
 
-Author
-======
+## Author
 
 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>

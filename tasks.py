@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tasks.py
 #
-# Copyright (C) 2021 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
@@ -9,30 +9,33 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 
+import os
+import re
+
 import invoke
 
 import pydio
 
 
 @invoke.task
-def test_unit(ctx):
+def qa_test_unit(ctx):
     """Run unit tests."""
     ctx.run('pytest tests/')
 
 
 @invoke.task
-def test_docs(ctx):
+def qa_test_docs(ctx):
     """Run documentation tests."""
     ctx.run('sphinx-build -M doctest docs/source docs/build')
 
 
-@invoke.task(test_unit, test_docs)
-def test(_):
+@invoke.task(qa_test_unit, qa_test_docs)
+def qa_test(_):
     """Run all tests."""
 
 
 @invoke.task
-def coverage(ctx, fail_under=94):
+def qa_cov(ctx, fail_under=94):
     """Run code coverage check."""
     ctx.run(
         'pytest tests/ --cov=pydio --cov-fail-under={fail_under} '
@@ -44,7 +47,7 @@ def coverage(ctx, fail_under=94):
 
 
 @invoke.task
-def serve_coverage(ctx, host='localhost', port=8000):
+def serve_cov(ctx, host='localhost', port=8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
     ctx.run('inv coverage -f0')
@@ -56,7 +59,7 @@ def serve_coverage(ctx, host='localhost', port=8000):
 
 
 @invoke.task
-def lint_code(ctx):
+def qa_lint_code(ctx):
     """Run linter on source files."""
     args = ['pylint -f colorized --fail-under=9.0 pydio']
     args.extend([
@@ -68,7 +71,7 @@ def lint_code(ctx):
 
 
 @invoke.task
-def lint_tests(ctx):
+def qa_lint_tests(ctx):
     """Run linter on test files."""
     args = ['pylint tests -f colorized --fail-under=9.0']
     args.extend([
@@ -84,13 +87,13 @@ def lint_tests(ctx):
     ctx.run(' '.join(args))
 
 
-@invoke.task(lint_code, lint_tests)
-def lint(_):
+@invoke.task(qa_lint_code, qa_lint_tests)
+def qa_lint(_):
     """Run all linters."""
 
 
-@invoke.task(test, coverage, lint)
-def check(_):
+@invoke.task(qa_test, qa_cov, qa_lint)
+def qa(_):
     """Run all code quality checks."""
 
 
@@ -109,14 +112,14 @@ def tox(ctx, parallel=False, env=None):
     """
     args = ['tox']
     if parallel:
-        args.append('-p')
+        args.append('-p=auto')
     if env:
         args.append('-e {}'.format(env))
     ctx.run(' '.join(args))
 
 
 @invoke.task
-def fix_formatting(ctx):
+def adjust_formatting(ctx):
     """Run code formatting tools."""
     ctx.run(
         'autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --expand-star-imports pydio tests scripts tasks.py'
@@ -126,7 +129,7 @@ def fix_formatting(ctx):
 
 
 @invoke.task
-def fix_license(ctx):
+def adjust_copyright(ctx):
     """Update LICENSE file and license preambles in source files."""
     ctx.run(
         'scripts/licenser/licenser.py . --released={released} --author="{author}" -i "*.py" -i "*.rst" -e "*README.rst" -e "*CHANGELOG.rst" -e "*.git"'
@@ -134,8 +137,8 @@ def fix_license(ctx):
     )
 
 
-@invoke.task(fix_formatting, fix_license)
-def fix(_):
+@invoke.task(adjust_formatting, adjust_copyright)
+def adjust(_):
     """Run all code fixers."""
 
 
@@ -148,7 +151,7 @@ def build_docs(ctx):
 @invoke.task
 def build_pkg(ctx):
     """Build distribution package."""
-    ctx.run('python setup.py sdist bdist_wheel')
+    ctx.run('poetry build')
 
 
 @invoke.task(build_docs, build_pkg)
@@ -165,36 +168,70 @@ def serve_docs(ctx, host='localhost', port=8000):
     )
 
 
-@invoke.task
-def validate_tag(ctx, tag):
-    """Check CHANGELOG.md and pydio/__init__.py agains given tag."""
-    ctx.run('scripts/tag.py -c {}'.format(tag))
+@invoke.task(
+    help={
+        'rc': 'Create a release candidate instead of regular version',
+        'dev': 'Create a development release instead of regular version',
+        'dry_run': 'Do not commit anything. Instead, exit with 0 if bump would succeed or with 1 otherwise',
+        'manual_version': 'Bump to provided manual version'
+    }
+)
+def bump(ctx, rc=False, dev=False, dry_run=False, manual_version=None):
+    """Bump version and create bump commit.
 
-
-@invoke.task(fix)
-def release(ctx, tag_or_version):
-    """Run code fixers and update version in library code.
-
-    This task should be run just before committing the last changes before
-    next release. `tag_or_version` should contain version library will
-    receive in PyPI. This can later be verified in CI with `validate-tag`
-    task.
+    This command bumps version according to arguments provided. For --rc, it
+    will create next release candidate. For --dev, it will create development
+    version tagged with current date and time. If no args are given, then next
+    release is determined based on commit messages. Additionally, this command
+    updates CHANGELOG.md.
     """
-    ctx.run('scripts/tag.py {}'.format(tag_or_version))
+
+    def get_most_recent_tag():
+        return ctx.run('git tag --sort=-committerdate | head -1').stdout.strip()
+
+    def get_devrelease_number():
+        tag = get_most_recent_tag()
+        m = re.search(r'dev(\d+)$', tag)
+        if m is None:
+            return 1
+        return int(m.group(1)) + 1
+
+    if rc and dev:
+        raise ValueError("cannot use both --rc and --dev options")
+    args = ['cz', 'bump']
+    if rc:
+        args.append('--prerelease=rc')
+    if dev:
+        args.append(f"--devrelease={get_devrelease_number()}")
+    if dry_run:
+        args.append('--dry-run')
+    if manual_version:
+        args.append(manual_version)
+    ctx.run(' '.join(args))
 
 
 @invoke.task(build_pkg)
 def deploy_test(ctx):
     """Build and deploy library to test PyPI."""
     ctx.run(
-        'twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*'
+        'twine upload --verbose --repository-url https://test.pypi.org/legacy/ dist/*',
+        env={
+            'TWINE_USERNAME': '__token__',
+            'TWINE_PASSWORD': os.environ.get('TEST_PYPI_TOKEN')
+        }
     )
 
 
 @invoke.task(build_pkg)
 def deploy_prod(ctx):
     """Deploy library to production PyPI."""
-    ctx.run('twine upload --verbose dist/*')
+    ctx.run(
+        'twine upload --verbose dist/*',
+        env={
+            'TWINE_USERNAME': '__token__',
+            'TWINE_PASSWORD': os.environ.get('PYPI_TOKEN')
+        }
+    )
 
 
 @invoke.task
