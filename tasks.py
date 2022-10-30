@@ -225,7 +225,13 @@ def deploy_test(ctx):
 @invoke.task(build_pkg)
 def deploy_prod(ctx):
     """Deploy library to production PyPI."""
-    ctx.run('twine upload --verbose dist/*')
+    ctx.run(
+        'twine upload --verbose dist/*',
+        env={
+            'TWINE_USERNAME': '__token__',
+            'TWINE_PASSWORD': os.environ.get('PYPI_TOKEN')
+        }
+    )
 
 
 @invoke.task
