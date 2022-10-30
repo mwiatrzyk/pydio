@@ -1,10 +1,32 @@
 version: 2.1
 
 commands:
+  install-deps:
+    steps:
+      - run: poetry install -q
+  bump-version:
+    parameters:
+      flags:
+        type: string
+        default: ""
+    steps:
+      - run: poetry run inv adjust
+      - run: poetry run inv bump <<parameters.flags>>
+      - run: poetry run inv qa
+  deploy-test:
+    steps:
+      - run: poetry run inv deploy-test
   configure-git:
     steps:
       - run: git config user.name "Maciej Wiatrzyk"
       - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
+  push-to-git:
+    parameters:
+      branch_name:
+        type: string
+    steps:
+      - run: git push --set-upstream origin <<parameters.branch_name>>
+      - run: git push --tags
 
 jobs:
   test:
@@ -19,22 +41,21 @@ jobs:
       - checkout
       - run: pip install tox
       - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
-  deploy-development:
+  deploy-dev:
     docker:
       - image: cimg/python:3.9
     parameters:
-      branch_name:
+      push_to:
         type: string
     steps:
       - checkout
       - configure-git
-      - run: poetry install -q
-      - run: poetry run inv adjust
-      - run: poetry run inv bump --dev
-      - run: poetry run inv qa
-      - run: poetry run inv deploy-test
-      - run: git push --set-upstream origin <<parameters.branch_name>>
-      - run: git push --tags
+      - install-deps
+      - bump-version:
+          flags: "--dev"
+      - deploy-test
+      - push-to-git:
+          branch_name: <<parameters.push_to>>
 
 workflows:
   test:
@@ -51,12 +72,12 @@ workflows:
           name: "test-py39"
           ver_major: "3"
           ver_minor: "9"
-      - deploy-development:
+      - deploy-dev:
           requires:
             - test-py37
             - test-py38
             - test-py39
-          branch_name: development
+          push_to: development
           filters:
             branches:
               only: development
