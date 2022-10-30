@@ -41,21 +41,6 @@ jobs:
       - checkout
       - run: pip install tox
       - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
-  deploy-dev:
-    docker:
-      - image: cimg/python:3.9
-    parameters:
-      push_to:
-        type: string
-    steps:
-      - checkout
-      - configure-git
-      - install-deps
-      - bump-version:
-          flags: "--dev"
-      - deploy-test
-      - push-to-git:
-          branch_name: <<parameters.push_to>>
   deploy-rc:
     docker:
       - image: cimg/python:3.9
@@ -66,7 +51,6 @@ jobs:
       - checkout
       - configure-git
       - install-deps
-      - run: poetry run inv bump --rc --dry-run || (circleci-agent step halt)
       - bump-version:
           flags: "--rc"
       - deploy-test
@@ -92,23 +76,13 @@ workflows:
           name: "test-py310"
           ver_major: "3"
           ver_minor: "10"
-      - deploy-dev:
-          requires:
-            - test-py37
-            - test-py38
-            - test-py39
-            - test-py310
-          push_to: development
-          filters:
-            branches:
-              only: development
       - deploy-rc:
           requires:
             - test-py37
             - test-py38
             - test-py39
             - test-py310
-          push_to: staging
+          push_to: $CIRCLECI_BRANCH
           filters:
             branches:
-              only: staging
+              only: "*-dev"
