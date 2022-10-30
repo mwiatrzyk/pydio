@@ -1,18 +1,8 @@
-<!--
-.. image:: https://img.shields.io/pypi/v/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/l/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/dm/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
-    :target: https://codecov.io/gl/zef1r/pydio
--->
 ![PyPI](https://img.shields.io/pypi/v/pydio)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydio)
 ![PyPI - License](https://img.shields.io/pypi/l/pydio)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pydio)
-![Codecov](https://img.shields.io/codecov/c/github/mwiatrzyk/pydio)
+[![codecov](https://codecov.io/gh/mwiatrzyk/pydio/branch/master/graph/badge.svg?token=Y6DJDSOR6M)](https://codecov.io/gh/mwiatrzyk/pydio)
 
 # PyDio
 
