@@ -22,7 +22,7 @@ commands:
       - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
   push-to-git:
     steps:
-      - run: git push --set-upstream origin $CIRCLECI_BRANCH
+      - run: git push --set-upstream origin $CIRCLE_BRANCH
       - run: git push --tags
 
 jobs:
