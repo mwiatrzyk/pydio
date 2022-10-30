@@ -85,4 +85,4 @@ workflows:
           push_to: $CIRCLECI_BRANCH
           filters:
             branches:
-              only: "*-dev"
+              only: .*-dev
