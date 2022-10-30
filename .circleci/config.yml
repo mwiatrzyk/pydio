@@ -16,6 +16,9 @@ commands:
   deploy-test:
     steps:
       - run: poetry run inv deploy-test
+  deploy-prod:
+    steps:
+      - run: poetry run inv deploy-prod
   configure-git:
     steps:
       - run: git config user.name "Maciej Wiatrzyk"
@@ -59,6 +62,21 @@ jobs:
       - deploy-test
       - push-to-git
       - publish-coverage
+  deploy:
+    docker:
+      - image: cimg/python:3.9
+    parameters:
+      push_to:
+        type: string
+    steps:
+      - checkout
+      - configure-git
+      - install-deps
+      - bump-version
+      - deploy-test
+      - deploy-prod
+      - push-to-git
+      - publish-coverage
 
 workflows:
   test:
@@ -85,7 +103,15 @@ workflows:
             - test-py38
             - test-py39
             - test-py310
-          push_to: $CIRCLECI_BRANCH
           filters:
             branches:
               only: /.*\-dev/
+      - deploy:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          filters:
+            branches:
+              only: master
