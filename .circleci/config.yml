@@ -1,54 +1,114 @@
 version: 2.1
 
+commands:
+  install-deps:
+    steps:
+      - run: poetry install -q
+  bump-version:
+    parameters:
+      flags:
+        type: string
+        default: ""
+    steps:
+      - run: poetry run inv adjust
+      - run: poetry run inv bump <<parameters.flags>>
+      - run: poetry run inv qa
+  deploy-test:
+    steps:
+      - run: poetry run inv deploy-test
+  configure-git:
+    steps:
+      - run: git config user.name "Maciej Wiatrzyk"
+      - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
+  push-to-git:
+    parameters:
+      branch_name:
+        type: string
+    steps:
+      - run: git push --set-upstream origin <<parameters.branch_name>>
+      - run: git push --tags
+
 jobs:
   test:
     docker:
-      - image: cimg/python:<<parameters.version>>
+      - image: cimg/python:<<parameters.ver_major>>.<<parameters.ver_minor>>
     parameters:
-      version:
+      ver_minor:
         type: string
-      toxenv:
+      ver_major:
         type: string
     steps:
       - checkout
-      - run: |
-          pipenv --python <<parameters.version>> install --skip-lock --dev
-          pipenv run inv tox -e <<parameters.toxenv>>
-  deploy-release-candidate:
+      - run: pip install tox
+      - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
+  deploy-dev:
     docker:
       - image: cimg/python:3.9
+    parameters:
+      push_to:
+        type: string
     steps:
       - checkout
-      - run: |
-          pipenv --python=3.9 install --skip-lock --dev
-          pipenv run inv ci-tag-release-candidate
-          git push --tags
+      - configure-git
+      - install-deps
+      - bump-version:
+          flags: "--dev"
+      - deploy-test
+      - push-to-git:
+          branch_name: <<parameters.push_to>>
+  deploy-rc:
+    docker:
+      - image: cimg/python:3.9
+    parameters:
+      push_to:
+        type: string
+    steps:
+      - checkout
+      - configure-git
+      - install-deps
+      - run: poetry run inv bump --rc --dry-run || (circleci-agent step halt)
+      - bump-version:
+          flags: "--rc"
+      - deploy-test
+      - push-to-git:
+          branch_name: <<parameters.push_to>>
 
 workflows:
   test:
     jobs:
       - test:
-          name: "test-py36"
-          version: "3.6"
-          toxenv: "py36"
-      - test:
           name: "test-py37"
-          version: "3.7"
-          toxenv: "py37"
+          ver_major: "3"
+          ver_minor: "7"
       - test:
           name: "test-py38"
-          version: "3.8"
-          toxenv: "py38"
+          ver_major: "3"
+          ver_minor: "8"
       - test:
           name: "test-py39"
-          version: "3.9"
-          toxenv: "py39"
-      - deploy-release-candidate:
+          ver_major: "3"
+          ver_minor: "9"
+      - test:
+          name: "test-py310"
+          ver_major: "3"
+          ver_minor: "10"
+      - deploy-dev:
           requires:
-            - test-py36
             - test-py37
             - test-py38
             - test-py39
+            - test-py310
+          push_to: development
+          filters:
+            branches:
+              only: development
+      - deploy-rc:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          push_to: staging
           filters:
             branches:
               only: staging
