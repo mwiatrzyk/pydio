@@ -24,6 +24,12 @@ commands:
     steps:
       - run: git push --set-upstream origin $CIRCLE_BRANCH
       - run: git push --tags
+  publish-coverage:
+    steps:
+      - run: poetry run inv qa-cov -f0
+      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
+      - run: chmod +x codecov
+      - run: ./codecov
 
 jobs:
   test:
@@ -50,8 +56,9 @@ jobs:
       - install-deps
       - bump-version:
           flags: "--rc"
-      #- deploy-test
+      - deploy-test
       - push-to-git
+      - publish-coverage
 
 workflows:
   test:

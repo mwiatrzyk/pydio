@@ -8,6 +8,11 @@
 .. image:: https://codecov.io/gl/zef1r/pydio/branch/master/graph/badge.svg?token=6EVGTI0KZ0
     :target: https://codecov.io/gl/zef1r/pydio
 -->
+![PyPI](https://img.shields.io/pypi/v/pydio)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pydio)
+![PyPI - License](https://img.shields.io/pypi/l/pydio)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pydio)
+![Codecov](https://img.shields.io/codecov/c/github/mwiatrzyk/pydio)
 
 # PyDio
 
