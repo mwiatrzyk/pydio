@@ -51,7 +51,7 @@ jobs:
       - restore_cache:
           name: Restore Poetry cache
           keys:
-            - poetry-{{ checksum "poetry.lock" }}
+            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
       - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
       - save_cache:
