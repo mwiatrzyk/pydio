@@ -79,9 +79,9 @@ jobs:
           ver_major: "3"
           ver_minor: "9"
       - run: poetry run inv adjust
-      - run: git commit -va -m "style: adjust code style" || exit 0
+      - run: "git commit -va -m 'style: adjust code style' || exit 0"
       - run: poetry run cz changelog --incremental
-      - run: git commit -va -m "docs: update CHANGELOG.md" || exit 0
+      - run: "git commit -va -m 'docs: update CHANGELOG.md' || exit 0"
       - push-to-git
       - publish-coverage
   bump:
