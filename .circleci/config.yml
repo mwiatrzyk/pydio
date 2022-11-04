@@ -47,8 +47,10 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: pip install tox
-      - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
+      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - run: poetry install -q
+      - run: poetry run inv qa
   deploy-rc:
     docker:
       - image: cimg/python:3.9
@@ -93,21 +95,21 @@ workflows:
           name: "test-py310"
           ver_major: "3"
           ver_minor: "10"
-      - deploy-rc:
-          requires:
-            - test-py37
-            - test-py38
-            - test-py39
-            - test-py310
-          filters:
-            branches:
-              only: /.*\-dev/
-      - deploy:
-          requires:
-            - test-py37
-            - test-py38
-            - test-py39
-            - test-py310
-          filters:
-            branches:
-              only: master
+      #- deploy-rc:
+      #    requires:
+      #      - test-py37
+      #      - test-py38
+      #      - test-py39
+      #      - test-py310
+      #    filters:
+      #      branches:
+      #        only: /.*\-dev/
+      #- deploy:
+      #    requires:
+      #      - test-py37
+      #      - test-py38
+      #      - test-py39
+      #      - test-py310
+      #    filters:
+      #      branches:
+      #        only: master
