@@ -69,7 +69,6 @@ jobs:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
       - run: poetry run inv qa
-      - run: gh --version
   release:
     docker:
       - image: cimg/python:3.9
