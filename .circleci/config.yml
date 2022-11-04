@@ -2,8 +2,26 @@ version: 2.1
 
 commands:
   install-deps:
+    parameters:
+      ver_major:
+        type: string
+        default: "3"
+      ver_minor:
+        type: string
+        default: "9"
     steps:
+      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - restore_cache:
+          name: restore dependency cache
+          keys:
+            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
+      - save_cache:
+          name: save dependency cache
+          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+          paths:
+            - ~/.cache/pypoetry/
   bump-version:
     parameters:
       flags:
@@ -23,6 +41,8 @@ commands:
     steps:
       - run: git config user.name "Maciej Wiatrzyk"
       - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
+      - run: git config committer.name "CircleCI"
+      - run: git config committer.email "noreply@circleci.com"
   push-to-git:
     steps:
       - run: git push --set-upstream origin $CIRCLE_BRANCH
@@ -45,32 +65,45 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: pip install tox
-      - run: tox -e py<<parameters.ver_major>><<parameters.ver_minor>>
-  deploy-rc:
+      - install-deps:
+          ver_major: <<parameters.ver_major>>
+          ver_minor: <<parameters.ver_minor>>
+      - run: poetry run inv qa
+  before-bump:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
       - configure-git
-      - install-deps
-      - bump-version:
-          flags: "--rc"
-      - deploy-test
+      - install-deps:
+          ver_major: "3"
+          ver_minor: "9"
+      - run: poetry run inv adjust
+      - run: "git commit -va -m 'style: adjust code style' || exit 0"
+      - run: poetry run cz changelog --incremental
+      - run: "git commit -va -m 'docs: update CHANGELOG.md' || exit 0"
       - push-to-git
       - publish-coverage
+  bump:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - configure-git
+      - install-deps:
+          ver_major: "3"
+          ver_minor: "9"
+      - run: poetry run cz bump || circleci-agent step halt
+      - push-to-git
   deploy:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
-      - configure-git
-      - install-deps
-      - bump-version
-      - deploy-test
-      - deploy-prod
-      - push-to-git
-      - publish-coverage
+      - install-deps:
+          ver_major: "3"
+          ver_minor: "9"
+      - run: poetry run inv deploy-prod
 
 workflows:
   test:
@@ -91,7 +124,7 @@ workflows:
           name: "test-py310"
           ver_major: "3"
           ver_minor: "10"
-      - deploy-rc:
+      - before-bump:
           requires:
             - test-py37
             - test-py38
@@ -99,13 +132,16 @@ workflows:
             - test-py310
           filters:
             branches:
-              only: /.*\-dev/
+              only: master
+      - bump:
+          requires:
+            - before-bump
+          filters:
+            branches:
+              only: master
       - deploy:
           requires:
-            - test-py37
-            - test-py38
-            - test-py39
-            - test-py310
+            - bump
           filters:
             branches:
               only: master
