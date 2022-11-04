@@ -1,10 +1,5 @@
 ## Unreleased
 
-### Fix
-
-- manually rewrite changelog for old versions
-- set CircleCI as a Git committer for CI jobs
-
 ## v0.2.0 (2022-10-30)
 
 ### Feat
