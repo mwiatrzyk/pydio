@@ -77,8 +77,8 @@ jobs:
       - checkout
       - configure-git
       - install-deps:
-          ver_major: 3
-          ver_minor: 9
+          ver_major: "3"
+          ver_minor: "9"
       - run: poetry run inv adjust
       - run: poetry run cz changelog --incremental
       - run: poetry run cz bump || circleci-agent step halt
