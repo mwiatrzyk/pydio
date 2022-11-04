@@ -48,8 +48,18 @@ jobs:
     steps:
       - checkout
       - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - restore_cache:
+          name: Restore Poetry cache
+          keys:
+            - poetry-{{ checksum "poetry.lock" }}
       - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
+      - run: ls -al ~/.cache/pypoetry
+      - save_cache:
+          name: Save Poetry cache
+          key: poetry-{{ checksum "poetry.lock" }}
+          paths:
+            - ~/.cache/pypoetry/
       - run: poetry run inv qa
   deploy-rc:
     docker:
