@@ -54,7 +54,6 @@ jobs:
             - poetry-{{ checksum "poetry.lock" }}
       - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
-      - run: ls -al ~/.cache/pypoetry
       - save_cache:
           name: Save Poetry cache
           key: poetry-{{ checksum "poetry.lock" }}
