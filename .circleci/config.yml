@@ -23,6 +23,8 @@ commands:
     steps:
       - run: git config user.name "Maciej Wiatrzyk"
       - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
+      - run: git config committer.name "CircleCI"
+      - run: git config committer.email "noreply@circleci.com"
   push-to-git:
     steps:
       - run: git push --set-upstream origin $CIRCLE_BRANCH
