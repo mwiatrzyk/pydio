@@ -2,8 +2,26 @@ version: 2.1
 
 commands:
   install-deps:
+    parameters:
+      ver_major:
+        type: string
+        default: "3"
+      ver_minor:
+        type: string
+        default: "9"
     steps:
+      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - restore_cache:
+          name: restore install-deps cache
+          keys:
+            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
+      - save_cache:
+          name: save install-deps cache
+          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+          paths:
+            - ~/.cache/pypoetry/
   bump-version:
     parameters:
       flags:
@@ -47,18 +65,9 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
-      - restore_cache:
-          name: Restore Poetry cache
-          keys:
-            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
-      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
-      - run: poetry install -q
-      - save_cache:
-          name: Save Poetry cache
-          key: poetry-{{ checksum "poetry.lock" }}
-          paths:
-            - ~/.cache/pypoetry/
+      - install-deps:
+          ver_major: <<parameters.ver_major>>
+          ver_minor: <<parameters.ver_minor>>
       - run: poetry run inv qa
   deploy-rc:
     docker:
