@@ -12,13 +12,13 @@ commands:
     steps:
       - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
       - restore_cache:
-          name: restore install-deps cache
+          name: restore dependency cache
           keys:
             - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
       - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
       - save_cache:
-          name: save install-deps cache
+          name: save dependency cache
           key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
           paths:
             - ~/.cache/pypoetry/
