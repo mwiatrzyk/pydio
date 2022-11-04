@@ -69,28 +69,23 @@ jobs:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
       - run: poetry run inv qa
-  deploy-rc:
+      - run: gh --version
+  release:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
       - configure-git
-      - install-deps
-      - bump-version:
-          flags: "--rc"
-      - deploy-test
-      - push-to-git
-      - publish-coverage
-  deploy:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - configure-git
-      - install-deps
-      - bump-version
-      - deploy-test
-      - deploy-prod
+      - install-deps:
+          ver_major: 3
+          ver_minor: 9
+      - run: poetry run inv adjust
+      - run: poetry run cz changelog --incremental
+      - run: poetry run cz bump || circleci-agent step halt
+      - run: poetry run inv qa
+      #- bump-version
+      #- deploy-test
+      #- deploy-prod
       - push-to-git
       - publish-coverage
 
@@ -113,21 +108,12 @@ workflows:
           name: "test-py310"
           ver_major: "3"
           ver_minor: "10"
-      #- deploy-rc:
-      #    requires:
-      #      - test-py37
-      #      - test-py38
-      #      - test-py39
-      #      - test-py310
-      #    filters:
-      #      branches:
-      #        only: /.*\-dev/
-      #- deploy:
-      #    requires:
-      #      - test-py37
-      #      - test-py38
-      #      - test-py39
-      #      - test-py310
-      #    filters:
-      #      branches:
-      #        only: master
+      - release:
+          requires:
+            - test-py37
+            - test-py38
+            - test-py39
+            - test-py310
+          filters:
+            branches:
+              only: master
