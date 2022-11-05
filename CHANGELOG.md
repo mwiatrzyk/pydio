@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Fix
+
+- update CHANGELOG.md after each successfull push
+
 ## v0.2.0 (2022-10-30)
 
 ### Feat
