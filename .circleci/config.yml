@@ -139,5 +139,7 @@ workflows:
             - test-py39
             - test-py310
           filters:
+            branches:
+              ignore: /.*/
             tags:
               only: /v\d+.\d+.\d+/
