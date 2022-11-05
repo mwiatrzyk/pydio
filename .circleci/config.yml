@@ -77,7 +77,7 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - run: poetry run cz changelog --incremental
-      - run: "git commit -va -m 'docs: update CHANGELOG.md [skip ci]' || exit 0"
+      - run: "git commit -va -m 'docs: update CHANGELOG.md [skip ci]' || circleci-agent step halt"
       - push-to-git
   before-bump:
     docker:
