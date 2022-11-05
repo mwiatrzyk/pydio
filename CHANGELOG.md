@@ -2,7 +2,7 @@
 
 ### Fix
 
-- update CHANGELOG.md after each successfull push
+- fix various CI issues (#6)
 
 ## v0.2.0 (2022-10-30)
 
