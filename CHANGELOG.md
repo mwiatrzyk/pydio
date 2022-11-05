@@ -1,3 +1,9 @@
+## v0.3.2 (2022-11-05)
+
+### Fix
+
+- fix config.yml so that the job is triggered once tag is pushed
+
 ## v0.3.1 (2022-11-05)
 
 ### Fix
