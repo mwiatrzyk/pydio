@@ -11,6 +11,9 @@
 
 import os
 import re
+import json
+import tempfile
+import subprocess
 
 import invoke
 
@@ -232,6 +235,60 @@ def deploy_prod(ctx):
             'TWINE_PASSWORD': os.environ.get('PYPI_TOKEN')
         }
     )
+
+
+@invoke.task(build_pkg)
+def deploy_gh(ctx, tag, draft=False):
+    """Deploy library to GitHub."""
+
+    def run_subprocess(args: list) -> subprocess.CompletedProcess:
+        return subprocess.run(args, capture_output=True, encoding='utf-8')
+
+    def run_gh(args: list) -> dict:
+        p = run_subprocess([
+            'curl', '-X', 'POST',
+            '-H', 'Accept: application/vnd.github+json',
+            '-H', f"Authorization: Bearer {os.environ['GH_TOKEN']}"] + args)
+        return json.loads(p.stdout)
+
+    def load_changelog():
+        p = run_subprocess(['cz', 'changelog', '--dry-run', tag])
+        return p.stdout
+
+    def create_release(tag_name, body, draft=False):
+
+        def write_params_json(filename):
+            with open(filename, 'w') as fd:
+                data = {
+                    'tag_name': tag_name,
+                    'name': tag_name,
+                    'body': body,
+                    'draft': draft
+                }
+                json.dump(data, fd)
+
+        with tempfile.TemporaryDirectory() as tmpd:
+            params_json = os.path.join(tmpd, 'params.json')
+            write_params_json(params_json)
+            return run_gh([
+                'https://api.github.com/repos/mwiatrzyk/pydio/releases',
+                '-d', f'@{params_json}'
+            ])
+
+    def upload_assets(dist_dir, release_id):
+        for name in os.listdir(dist_dir):
+            fullname = os.path.join(dist_dir, name)
+            run_gh([
+                '-H', 'Content-Type: application/octet-stream',
+                '--data-binary', f'@{fullname}',
+                f'https://uploads.github.com/repos/mwiatrzyk/pydio/releases/{release_id}/assets?name={name}'
+            ])
+
+    changelog = load_changelog()
+    release_info = create_release(tag, changelog, draft=draft)
+    if 'id' not in release_info:
+        raise RuntimeError(release_info)
+    upload_assets('dist', release_info['id'])
 
 
 @invoke.task
