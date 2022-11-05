@@ -1,3 +1,9 @@
+## v0.3.1 (2022-11-05)
+
+### Fix
+
+- make Changelog chapter in Sphinx documentation work again
+
 ## v0.3.0 (2022-11-05)
 
 ### Feat
