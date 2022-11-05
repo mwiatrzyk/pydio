@@ -77,7 +77,7 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - publish-coverage
-  before-release:
+  release:
     docker:
       - image: cimg/python:3.9
     steps:
@@ -91,18 +91,9 @@ jobs:
       - run: poetry run cz changelog --incremental
       - run: "git commit -va -m 'docs: update CHANGELOG.md [skip ci]' || exit 0"
       - push-to-git
-  release:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - configure-git
-      - install-deps:
-          ver_major: 3
-          ver_minor: 9
       - run: poetry run cz bump || circleci-agent step halt
-      - run: poetry run inv deploy-prod
       - push-to-git
+      - run: poetry run inv deploy-prod
 
 workflows:
   test:
@@ -127,18 +118,12 @@ workflows:
           filters:
             branches:
               only: master
-      - before-release:
+      - release:
           requires:
             - test-py37
             - test-py38
             - test-py39
             - test-py310
-          filters:
-            branches:
-              only: master
-      - release:
-          requires:
-            - before-release
           filters:
             branches:
               only: master
