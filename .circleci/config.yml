@@ -4,11 +4,9 @@ commands:
   install-deps:
     parameters:
       ver_major:
-        type: string
-        default: "3"
+        type: integer
       ver_minor:
-        type: string
-        default: "9"
+        type: integer
     steps:
       - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
       - restore_cache:
@@ -60,9 +58,9 @@ jobs:
       - image: cimg/python:<<parameters.ver_major>>.<<parameters.ver_minor>>
     parameters:
       ver_minor:
-        type: string
+        type: integer
       ver_major:
-        type: string
+        type: integer
     steps:
       - checkout
       - install-deps:
@@ -76,8 +74,8 @@ jobs:
       - checkout
       - configure-git
       - install-deps:
-          ver_major: "3"
-          ver_minor: "9"
+          ver_major: 3
+          ver_minor: 9
       - run: poetry run inv adjust
       - run: "git commit -va -m 'style: adjust code style' || exit 0"
       - run: poetry run cz changelog --incremental
@@ -91,8 +89,8 @@ jobs:
       - checkout
       - configure-git
       - install-deps:
-          ver_major: "3"
-          ver_minor: "9"
+          ver_major: 3
+          ver_minor: 9
       - run: poetry run cz bump || circleci-agent step halt
       - push-to-git
   deploy:
@@ -101,8 +99,8 @@ jobs:
     steps:
       - checkout
       - install-deps:
-          ver_major: "3"
-          ver_minor: "9"
+          ver_major: 3
+          ver_minor: 9
       - run: poetry run inv deploy-prod
 
 workflows:
@@ -110,20 +108,20 @@ workflows:
     jobs:
       - test:
           name: "test-py37"
-          ver_major: "3"
-          ver_minor: "7"
+          ver_major: 3
+          ver_minor: 7
       - test:
           name: "test-py38"
-          ver_major: "3"
-          ver_minor: "8"
+          ver_major: 3
+          ver_minor: 8
       - test:
           name: "test-py39"
-          ver_major: "3"
-          ver_minor: "9"
+          ver_major: 3
+          ver_minor: 9
       - test:
           name: "test-py310"
-          ver_major: "3"
-          ver_minor: "10"
+          ver_major: 3
+          ver_minor: 10
       - before-bump:
           requires:
             - test-py37
