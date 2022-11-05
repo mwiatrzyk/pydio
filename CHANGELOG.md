@@ -67,8 +67,7 @@
 - add missing ``__version__`` attribute to ``pydio.__init__.py``
 - fix pipeline issue about missing version info
 
-0.1.0rc1 (2021-02-04)
----------------------
+## 0.1.0rc1 (2021-02-04)
 
 ### Feat
 
