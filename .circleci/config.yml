@@ -98,6 +98,7 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
+      - run: poetry run inv qa
       - run: poetry run inv deploy-prod
 
 workflows:
@@ -133,13 +134,8 @@ workflows:
             branches:
               only: master
       - deploy:
-          requires:
-            - test-py37
-            - test-py38
-            - test-py39
-            - test-py310
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /^v.*/
+              only: /^v\d+\.\d+\.\d+$/
