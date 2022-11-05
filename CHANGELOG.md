@@ -1,4 +1,8 @@
-## Unreleased
+## v0.3.0 (2022-11-05)
+
+### Feat
+
+- remove compatibility layer for no longer supported Python 3.6
 
 ## v0.2.1 (2022-11-05)
 
