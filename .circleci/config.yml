@@ -20,21 +20,6 @@ commands:
           key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
           paths:
             - ~/.cache/pypoetry/
-  bump-version:
-    parameters:
-      flags:
-        type: string
-        default: ""
-    steps:
-      - run: poetry run inv adjust
-      - run: poetry run inv bump <<parameters.flags>>
-      - run: poetry run inv qa
-  deploy-test:
-    steps:
-      - run: poetry run inv deploy-test
-  deploy-prod:
-    steps:
-      - run: poetry run inv deploy-prod
   configure-git:
     steps:
       - run: git config user.name "Maciej Wiatrzyk"
