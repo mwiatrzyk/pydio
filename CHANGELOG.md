@@ -1,3 +1,9 @@
+## v0.3.3 (2022-11-05)
+
+### Fix
+
+- deploy task no longer requires test jobs
+
 ## v0.3.2 (2022-11-05)
 
 ### Fix
