@@ -1,4 +1,8 @@
-## v0.2.1 (2022-11-04)
+## Unreleased
+
+### Fix
+
+- update CHANGELOG.md after each successfull push
 
 ## v0.2.0 (2022-10-30)
 
