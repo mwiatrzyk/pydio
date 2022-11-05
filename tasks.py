@@ -9,11 +9,11 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 
+import json
 import os
 import re
-import json
-import tempfile
 import subprocess
+import tempfile
 
 import invoke
 
@@ -199,6 +199,7 @@ def bump(ctx, rc=False, dev=False, dry_run=False, manual_version=None):
             return 1
         return int(m.group(1)) + 1
 
+    ctx.run('inv adjust')
     if rc and dev:
         raise ValueError("cannot use both --rc and --dev options")
     args = ['cz', 'bump']
@@ -211,6 +212,7 @@ def bump(ctx, rc=False, dev=False, dry_run=False, manual_version=None):
     if manual_version:
         args.append(manual_version)
     ctx.run(' '.join(args))
+    ctx.run('inv qa')
 
 
 @invoke.task(build_pkg)
@@ -246,9 +248,9 @@ def deploy_gh(ctx, tag, draft=False):
 
     def run_gh(args: list) -> dict:
         p = run_subprocess([
-            'curl', '-X', 'POST',
-            '-H', 'Accept: application/vnd.github+json',
-            '-H', f"Authorization: Bearer {os.environ['GH_TOKEN']}"] + args)
+            'curl', '-X', 'POST', '-H', 'Accept: application/vnd.github+json',
+            '-H', f"Authorization: Bearer {os.environ['GH_TOKEN']}"
+        ] + args)
         return json.loads(p.stdout)
 
     def load_changelog():
@@ -271,16 +273,16 @@ def deploy_gh(ctx, tag, draft=False):
             params_json = os.path.join(tmpd, 'params.json')
             write_params_json(params_json)
             return run_gh([
-                'https://api.github.com/repos/mwiatrzyk/pydio/releases',
-                '-d', f'@{params_json}'
+                'https://api.github.com/repos/mwiatrzyk/pydio/releases', '-d',
+                f'@{params_json}'
             ])
 
     def upload_assets(dist_dir, release_id):
         for name in os.listdir(dist_dir):
             fullname = os.path.join(dist_dir, name)
             run_gh([
-                '-H', 'Content-Type: application/octet-stream',
-                '--data-binary', f'@{fullname}',
+                '-H', 'Content-Type: application/octet-stream', '--data-binary',
+                f'@{fullname}',
                 f'https://uploads.github.com/repos/mwiatrzyk/pydio/releases/{release_id}/assets?name={name}'
             ])
 
