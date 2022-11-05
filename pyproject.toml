@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PyDio"
-version = "0.2.0"
+version = "0.2.1"
 description = "Simple and functional dependency injection toolkit for Python"
 authors = [
     "Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>"
@@ -44,7 +44,7 @@ tox = "^3.27.0"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.2.0"
+version = "0.2.1"
 tag_format = "v$version"
 update_changelog_on_bump = true
 bump_message = "bump: $current_version -> $new_version [skip ci]"
