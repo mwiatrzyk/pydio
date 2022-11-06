@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import tempfile
+import datetime
 
 import invoke
 
@@ -173,22 +174,90 @@ def serve_docs(ctx, host='localhost', port=8000):
 
 @invoke.task(
     help={
-        'rc': 'Create a release candidate instead of regular version',
-        'dev': 'Create a development release instead of regular version',
-        'dry_run': 'Do not commit anything. Instead, exit with 0 if bump would succeed or with 1 otherwise',
-        'manual_version': 'Bump to provided manual version'
+        'branch': 'Name of the branch to choose strategy for',
+        'dry_run': 'Perform a dry-run instead of creating a commit'
     }
 )
-def bump(ctx, rc=False, dev=False, dry_run=False, manual_version=None):
+def bump(ctx, branch, dry_run=False):
     """Bump version and create bump commit.
 
-    This command bumps version according to arguments provided. For --rc, it
-    will create next release candidate. For --dev, it will create development
-    version tagged with current date and time. If no args are given, then next
-    release is determined based on commit messages. Additionally, this command
-    updates CHANGELOG.md.
+    This command can only be executed for clean working copy of the project, so
+    any pending changes must first be either committed or removed. Untracked
+    files do also count. After that it runs `inv qa` command to ensure that
+    nothing is broken. Finally, it runs `cz bump` command to update CHANGELOG.md
+    file and project version, producing a bump commit. Versioning strategy
+    depends on a branch name:
+
+    1) For branch named `master`:
+
+        New version is calculated from commit messages, and bump will be done
+        on MAJOR, MINOR or PATCH version number (according to SemVer rules)
+        depending on commits that were recently introduced. See `cz info` for
+        more details on how to write commit log messages.
+
+        If no matching commits were found, then no bump is done at all and
+        command fails.
+
+    2) For branch matching `v\d+\.\d+\.\d+-rc` (f.e: v1.2.3-rc):
+
+        New version is calculated in similar way as for `master`, but with `rcN`
+        postfix added.
+
+    3) For branch matching `v\d+\.\d+\.\d+-dev` (f.e: v1.2.3-dev):
+
+        New version is taken directly from branch name and is supplied with a
+        `.devYYYYMMDDHHMMSS` postfix, reflecting date and time the tag was
+        created (in UTC).
+
+        Unlike `master` and `v.*-rc` branches, development tags will always be
+        created - even if no changes were made to the repo.
+
+    If no matching branch name given, then the command fails.
     """
 
+    def check_if_working_directory_clean():
+        p = subprocess.run(['git', 'status', '--untracked-files', '--porcelain'], capture_output=True, encoding='utf-8')
+        if p.stdout:
+            raise RuntimeError(f"working directory not clean:\n{p.stdout}")
+
+    def check_if_tests_are_passing():
+        ctx.run('inv qa')
+
+    def check_preconditions():
+        check_if_working_directory_clean()
+        #check_if_tests_are_passing()
+
+    def run_cz_bump(*args):
+        cmd = ['cz', 'bump']
+        if dry_run:
+            cmd.append('--dry-run')
+        cmd.extend(args)
+        return ctx.run(' '.join(cmd))
+
+    def bump():
+        check_preconditions()
+        run_cz_bump()
+
+    def bump_rc():
+        check_preconditions()
+        run_cz_bump('--prerelease=rc')
+
+    def bump_dev():
+        now = datetime.datetime.utcnow()
+        check_preconditions()
+        run_cz_bump(f"--devrelease={now.strftime('%Y%m%d%H%M%S')}")
+
+    if branch == 'master':
+        bump()
+    elif re.match(r'^v\d+\.\d+\.\d+-rc$', branch):
+        bump_rc()
+    elif re.match(r'^v\d+\.\d+\.\d+-dev$', branch):
+        print('runc on dev branch')
+    else:
+        raise RuntimeError(f"unsupported branch name given: {branch}")
+
+
+def _bump_old():
     def get_most_recent_tag():
         return ctx.run('git tag --sort=-committerdate | head -1').stdout.strip()
 

@@ -76,7 +76,7 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
-      - run: poetry run bump $CIRCLE_BRANCH
+      - run: poetry run inv bump $CIRCLE_BRANCH
   tag:
     docker:
       - image: cimg/python:3.9
