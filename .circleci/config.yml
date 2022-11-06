@@ -70,9 +70,6 @@ jobs:
   bump:
     docker:
       - image: cimg/python:3.9
-    parameters:
-      branch:
-        type: string
     steps:
       - checkout
       - configure-git
