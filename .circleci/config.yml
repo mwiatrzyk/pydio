@@ -93,32 +93,54 @@ workflows:
           name: "test-py37"
           ver_major: 3
           ver_minor: 7
+          filters:
+            tags:
+              only: /.*/
       - test:
           name: "test-py38"
           ver_major: 3
           ver_minor: 8
+          filters:
+            tags:
+              only: /.*/
       - test:
           name: "test-py39"
           ver_major: 3
           ver_minor: 9
+          filters:
+            tags:
+              only: /.*/
       - test:
           name: "test-py310"
           ver_major: 3
           ver_minor: 10
-      - publish-coverage:
           filters:
-            branches:
-              only: master
-      - tag:
+            tags:
+              only: /.*/
+      - test-all:
           requires:
             - test-py37
             - test-py38
             - test-py39
             - test-py310
           filters:
+            tags:
+              only: /.*/
+      - publish-coverage:
+          requires:
+            - test-all
+          filters:
+            branches:
+              only: master
+      - tag:
+          requires:
+            - test-all
+          filters:
             branches:
               only: master
       - deploy:
+          requires:
+            - test-all
           filters:
             branches:
               ignore: /.*/
