@@ -52,6 +52,11 @@ jobs:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
       - run: poetry run inv qa
+  test-all:
+    docker:
+      - image: cimg/python:<<parameters.ver_major>>.<<parameters.ver_minor>>
+    steps:
+      - run: echo "All tests have passed."
   publish-coverage:
     docker:
       - image: cimg/python:3.9
