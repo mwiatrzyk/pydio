@@ -67,6 +67,19 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - publish-coverage
+  bump:
+    docker:
+      - image: cimg/python:3.9
+    parameters:
+      branch:
+        type: string
+    steps:
+      - checkout
+      - configure-git
+      - install-deps:
+          ver_major: 3
+          ver_minor: 9
+      - run: poetry run bump $CIRCLE_BRANCH
   tag:
     docker:
       - image: cimg/python:3.9
@@ -131,6 +144,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - bump:
+          requires:
+            - test-all
+          filters:
+            branches:
+              only: /^(master)|(v\d+\.\d+\.\d+-dev)|(v\d+\.\d+\.\d+-rc)$/
       - publish-coverage:
           requires:
             - test-all
