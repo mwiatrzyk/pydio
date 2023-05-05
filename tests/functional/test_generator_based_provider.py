@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tests/functional/test_generator_based_provider.py
 #
-# Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2023 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
@@ -45,7 +45,9 @@ def test_inject_object_and_then_close_injector_explicitly(injector, mock):
     injector.close()
 
 
-def test_when_injecting_object_from_inside_context_manager_then_injector_is_closed_automatically(injector, mock):
+def test_when_injecting_object_from_inside_context_manager_then_injector_is_closed_automatically(
+    injector, mock
+):
     with injector:
         mock.begin.expect_call().will_once(Return(123))
         obj = injector.inject('obj')
@@ -53,7 +55,9 @@ def test_when_injecting_object_from_inside_context_manager_then_injector_is_clos
         mock.end.expect_call()
 
 
-def test_object_factory_function_is_called_only_once_per_injectors_lifetime(injector, mock):
+def test_object_factory_function_is_called_only_once_per_injectors_lifetime(
+    injector, mock
+):
     retval = [1, 2, 3]
     mock.begin.expect_call().will_once(Return(retval))
     for _ in range(3):
@@ -61,7 +65,9 @@ def test_object_factory_function_is_called_only_once_per_injectors_lifetime(inje
         assert obj is retval
 
 
-def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(injector, mock):
+def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(
+    injector, mock
+):
     exc = ValueError('an error')
     with pytest.raises(ValueError) as excinfo:
         mock.begin.expect_call().will_once(Return(123))

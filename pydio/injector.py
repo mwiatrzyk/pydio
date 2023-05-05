@@ -1,15 +1,15 @@
 # ---------------------------------------------------------------------------
 # pydio/injector.py
 #
-# Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2023 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-import threading
 import inspect
+import threading
 import typing
 import weakref
 from typing import Awaitable, Hashable, Optional
@@ -118,7 +118,10 @@ class Injector(IInjector):
         """See :meth:`pydio.base.IInjector.close`."""
         return self._do_close()
 
-    def _do_close(self, exc_type=None, exc=None, tb=None) -> Optional[Awaitable[None]]:
+    def _do_close(self,
+                  exc_type=None,
+                  exc=None,
+                  tb=None) -> Optional[Awaitable[None]]:
         if self._provider is not None:
             with self._lock:
                 provider = self._provider
