@@ -87,7 +87,7 @@ class IFactory(abc.ABC):
     factory function provided by user (f.e. normal function or a coroutine,
     but never both).
 
-    ..deprecated:: 0.4.0
+    .. deprecated:: 0.4.0
         This will be removed from the public interface.
     """
 
@@ -114,7 +114,7 @@ class IFactory(abc.ABC):
             This will be set with exception class object when underlying
             factory is closed due to exception being raised.
 
-            ..versionadded:: 0.4.0
+            .. versionadded:: 0.4.0
 
         :param exc:
             Exception object.
@@ -122,7 +122,7 @@ class IFactory(abc.ABC):
             This will be set with exception instance when underlying factory is
             closed due to exception being raised.
 
-            ..versionadded:: 0.4.0
+            .. versionadded:: 0.4.0
 
         :param tb:
             Traceback object.
@@ -130,7 +130,7 @@ class IFactory(abc.ABC):
             This will be set when underlying factory is closed due to exception
             being raised.
 
-            ..versionadded:: 0.4.0
+            .. versionadded:: 0.4.0
         """
 
 
@@ -142,7 +142,7 @@ class IUnboundFactory(abc.ABC):
     wrap user-specified factory functions that are being registered to
     providers.
 
-    ..deprecated:: 0.4.0
+    .. deprecated:: 0.4.0
         This will be removed from the public interface.
     """
 
@@ -176,7 +176,7 @@ class IUnboundFactoryRegistry(abc.ABC):
     :class:`IUnboundFactory` object that matches key that was given to
     :meth:`IInjector.inject` call.
 
-    ..deprecated:: 0.4.0
+    .. deprecated:: 0.4.0
         This will be removed from the public interface.
     """
 
