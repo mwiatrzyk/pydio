@@ -8,68 +8,66 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-from typing import Hashable
 
 import pytest
-from mockify.core import satisfied
-from mockify.mock import Mock
+from mockify.actions import Return
 
 from pydio.api import Injector, Provider
-from tests.stubs import Foo, IFoo
-
-provider = Provider()
 
 
-@provider.provides('startup')
-@provider.provides('teardown')
-def make_startup(key: Hashable):
-    return Mock(key)
+@pytest.fixture
+def provider(mock):
+
+    def make_obj():
+        value = mock.begin()
+        try:
+            yield value
+        except Exception as e:
+            mock.failed(e)
+        else:
+            mock.end()
+
+    provider = Provider()
+    provider.register_func('obj', make_obj)
+    return provider
 
 
-@provider.provides(IFoo)
-def make_foo(injector: Injector, key: Hashable):
-    startup = injector.inject('startup')
-    teardown = injector.inject('teardown')
-    startup()
-    yield Foo()
-    teardown()
+@pytest.fixture
+def injector(provider):
+    yield Injector(provider)
 
 
-class TestGeneratorBasedProvider:
+def test_inject_object_and_then_close_injector_explicitly(injector, mock):
+    mock.begin.expect_call().will_once(Return(123))
+    obj = injector.inject('obj')
+    assert obj == 123
+    mock.end.expect_call()
+    injector.close()
 
-    @pytest.fixture
-    def injector(self):
-        return Injector(provider)
 
-    def test_injector_should_inject_proper_object(self, injector):
-        startup = injector.inject('startup')
-        startup.expect_call().times(1)
-        with satisfied(startup):
-            assert isinstance(injector.inject(IFoo), Foo)
+def test_when_injecting_object_from_inside_context_manager_then_injector_is_closed_automatically(injector, mock):
+    with injector:
+        mock.begin.expect_call().will_once(Return(123))
+        obj = injector.inject('obj')
+        assert obj == 123
+        mock.end.expect_call()
 
-    def test_injector_should_always_inject_same_instance(self, injector):
-        startup = injector.inject('startup')
-        startup.expect_call().times(1)
-        with satisfied(startup):
-            first = injector.inject(IFoo)
-        second = injector.inject(IFoo)
-        assert first is second
 
-    def test_when_injector_gets_closed_then_underlying_generator_proceeds_to_cleanup_phase(
-        self, injector
-    ):
-        self.test_injector_should_always_inject_same_instance(injector)
-        teardown = injector.inject('teardown')
-        teardown.expect_call().times(1)
-        with satisfied(teardown):
-            injector.close()
+def test_object_factory_function_is_called_only_once_per_injectors_lifetime(injector, mock):
+    retval = [1, 2, 3]
+    mock.begin.expect_call().will_once(Return(retval))
+    for _ in range(3):
+        obj = injector.inject('obj')
+        assert obj is retval
 
-    def test_use_injector_as_context_manager(self, injector):
-        teardown = injector.inject('teardown')
-        teardown.expect_call()
-        with satisfied(teardown):
-            with injector:
-                startup = injector.inject('startup')
-                startup.expect_call().times(1)
-                with satisfied(startup):
-                    injector.inject(IFoo)
+
+def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(injector, mock):
+    exc = ValueError('an error')
+    with pytest.raises(ValueError) as excinfo:
+        mock.begin.expect_call().will_once(Return(123))
+        with injector:
+            obj = injector.inject('obj')
+            assert obj == 123
+            mock.failed.expect_call(exc)
+            raise exc
+    assert excinfo.value is exc

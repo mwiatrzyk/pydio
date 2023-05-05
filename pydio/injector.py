@@ -9,11 +9,13 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 import threading
+import inspect
+import typing
 import weakref
 from typing import Awaitable, Hashable, Optional
 
 from . import exc
-from .base import IInjector, IUnboundFactoryRegistry
+from .base import IFactory, IInjector, IUnboundFactoryRegistry
 
 
 class Injector(IInjector):
@@ -35,11 +37,27 @@ class Injector(IInjector):
     def __init__(self, provider: IUnboundFactoryRegistry, env: Hashable = None):
         self._provider = provider
         self._env = env
-        self._cache = {}
+        self._cache: typing.Dict[typing.Any, IFactory] = {}
         self._lock = threading.RLock()
         self._scope = None
-        self._children = []
+        self._child_injectors: typing.List[Injector] = []
         self.__parent = None
+
+    def __exit__(self, exc_type, exc, tb):
+        if exc_type is None:
+            self.close()
+        else:
+            self._do_close(exc_type, exc, tb)
+        return exc_type is not None
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if exc_type is None:
+            maybe_coroutine = self.close()
+        else:
+            maybe_coroutine = self._do_close(exc_type, exc, tb)
+        if inspect.iscoroutine(maybe_coroutine):
+            await maybe_coroutine
+        return exc_type is not None
 
     @property
     def _parent(self):
@@ -91,23 +109,26 @@ class Injector(IInjector):
                 )
         with self._lock:
             injector = self.__class__(self._provider, env=env or self._env)
-            self._children.append(injector)
+            self._child_injectors.append(injector)
             injector._parent = self  # pylint: disable=protected-access
             injector._scope = scope  # pylint: disable=protected-access
             return injector
 
     def close(self) -> Optional[Awaitable[None]]:
         """See :meth:`pydio.base.IInjector.close`."""
+        return self._do_close()
+
+    def _do_close(self, exc_type=None, exc=None, tb=None) -> Optional[Awaitable[None]]:
         if self._provider is not None:
             with self._lock:
                 provider = self._provider
                 awaitables = []
-                for child in self._children:
-                    maybe_awaitable = child.close()
+                for child in self._child_injectors:
+                    maybe_awaitable = child._do_close(exc_type, exc, tb)
                     if maybe_awaitable is not None:
                         awaitables.append(maybe_awaitable)
                 for instance in self._cache.values():
-                    maybe_awaitable = instance.close()
+                    maybe_awaitable = instance.close(exc_type, exc, tb)
                     if maybe_awaitable is not None:
                         awaitables.append(maybe_awaitable)
                 if not provider.has_awaitables():

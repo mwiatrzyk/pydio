@@ -25,14 +25,22 @@ class GeneratorFactory(IFactory):
             self._instance = next(self._generator)
         return self._instance
 
-    def close(self):
+    def close(self, exc_type=None, exc=None, tb=None):
         prev_instance = self._instance
         self._instance = None
         if prev_instance is not _UNDEFINED:
-            try:
-                next(self._generator)
-            except StopIteration:
-                pass
+            if exc_type is None:
+                try:
+                    next(self._generator)
+                except StopIteration:
+                    pass
+            else:
+                try:
+                    self._generator.throw(exc_type, exc, tb)
+                except StopIteration:
+                    raise exc
+                else:
+                    raise
 
 
 class AsyncGeneratorFactory(IFactory):
@@ -51,16 +59,22 @@ class AsyncGeneratorFactory(IFactory):
 
         return async_get_instance()
 
-    def close(self):
+    def close(self, exc_type=None, exc=None, tb=None):
 
         async def async_close():
             prev_instance = self._instance
             self._instance = None
             if prev_instance is not _UNDEFINED:
-                try:
-                    await self._generator.__anext__()
-                except StopAsyncIteration:
-                    pass
+                if exc_type is None:
+                    try:
+                        await self._generator.__anext__()
+                    except StopAsyncIteration:
+                        pass
+                else:
+                    try:
+                        await self._generator.athrow(exc_type, exc, tb)
+                    except StopAsyncIteration:
+                        raise exc
 
         return async_close()
 
@@ -81,7 +95,7 @@ class CoroutineFactory(IFactory):
 
         return async_get_instance()
 
-    def close(self):
+    def close(self, exc_type=None, exc=None, tb=None):
 
         async def async_close():
             self._instance = None
@@ -98,7 +112,7 @@ class FunctionFactory(IFactory):
     def get_instance(self):
         return self._instance
 
-    def close(self):
+    def close(self, exc_type=None, exc=None, tb=None):
         self._instance = None
 
 
@@ -111,5 +125,5 @@ class InstanceFactory(IFactory):
     def get_instance(self):
         return self._value
 
-    def close(self):
+    def close(self, exc_type=None, exc=None, tb=None):
         self._value = None

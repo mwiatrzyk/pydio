@@ -10,53 +10,67 @@
 # ---------------------------------------------------------------------------
 import pytest
 from mockify.actions import Return
-from mockify.core import satisfied
-from mockify.mock import Mock
 
 from pydio.api import Injector, Provider
 
-provider = Provider()
+
+@pytest.fixture
+def provider(mock):
+
+    async def make_obj():
+        value = mock.begin()
+        try:
+            yield value
+        except Exception as e:
+            mock.failed(e)
+        else:
+            mock.end()
+
+    provider = Provider()
+    provider.register_func('obj', make_obj)
+    return provider
 
 
-@provider.provides('database')
-def make_database():
-    return Mock('database')
+@pytest.fixture
+def injector(provider):
+    return Injector(provider)
 
 
-@provider.provides('connection')
-async def make_connection(injector: Injector):
-    database = injector.inject('database')
-    connection = database.connect()
-    yield connection
-    connection.close()
+@pytest.mark.asyncio
+async def test_create_and_close_explicitly(injector, mock):
+    mock.begin.expect_call().will_once(Return(123))
+    obj = await injector.inject('obj')
+    assert obj == 123
+    mock.end.expect_call()
+    await injector.close()
 
 
-class TestAsyncGeneratorBasedProvider:
+@pytest.mark.asyncio
+async def test_create_and_close_via_context_manager(injector, mock):
+    async with injector:
+        mock.begin.expect_call().will_once(Return(123))
+        mock.end.expect_call()
+        obj = await injector.inject('obj')
+        assert obj == 123
 
-    @pytest.fixture
-    def injector(self):
-        return Injector(provider)
 
-    @pytest.mark.asyncio
-    async def test_injector_should_properly_create_and_close_instances_provided_by_async_generators(
-        self, injector
-    ):
-        connection = Mock('connection')
-        database = injector.inject('database')
-        database.connect.expect_call().will_once(Return(connection))
-        with satisfied(database):
-            assert await injector.inject('connection') is connection
-        connection.close.expect_call().times(1)
-        with satisfied(connection):
-            await injector.close()
+@pytest.mark.asyncio
+async def test_factory_function_is_called_only_once(injector, mock):
+    mock.begin.expect_call().will_once(Return(123))
+    async with injector:
+        mock.end.expect_call()
+        for _ in range(3):
+            assert (await injector.inject('obj')) == 123
 
-    @pytest.mark.asyncio
-    async def test_use_injector_as_async_context_manager(self, injector):
-        connection = Mock('connection')
-        connection.close.expect_call().times(1)
-        with satisfied(connection):
-            async with injector:
-                database = injector.inject('database')
-                database.connect.expect_call().will_once(Return(connection))
-                with satisfied(database):
-                    await injector.inject('connection')
+
+@pytest.mark.asyncio
+async def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(injector, mock):
+    exc = ValueError('an error')
+    with pytest.raises(ValueError) as excinfo:
+        mock.begin.expect_call().will_once(Return(123))
+        async with injector:
+            obj = await injector.inject('obj')
+            assert obj == 123
+            mock.failed.expect_call(exc)
+            raise exc
+    assert excinfo.value is exc
