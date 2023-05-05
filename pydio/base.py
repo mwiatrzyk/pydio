@@ -12,8 +12,8 @@
 
 import abc
 import contextlib
-import inspect
 from typing import Awaitable, Hashable, Optional, TypeVar, Union
+import typing
 
 from . import _compat
 
@@ -24,14 +24,6 @@ class IInjector(
     contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager
 ):
     """Definition of injector interface."""
-
-    def __exit__(self, *args):
-        self.close()
-
-    async def __aexit__(self, *args):
-        maybe_coroutine = self.close()
-        if inspect.iscoroutine(maybe_coroutine):
-            await maybe_coroutine
 
     @abc.abstractmethod
     def inject(self, key: Hashable) -> Union[T, Awaitable[T]]:
@@ -94,6 +86,9 @@ class IFactory(abc.ABC):
     :meth:`IInjector.inject`. Each factory should wrap one kind of object
     factory function provided by user (f.e. normal function or a coroutine,
     but never both).
+
+    ..deprecated:: 0.4.0
+        This will be removed from the public interface.
     """
 
     @abc.abstractmethod
@@ -105,13 +100,37 @@ class IFactory(abc.ABC):
         """
 
     @abc.abstractmethod
-    def close(self):
+    def close(self, exc_type: typing.Type[BaseException]=None, exc: BaseException=None, tb=None):
         """Close this factory.
 
         When called, underlying instance is cleared and calling
         :meth:`get_instance` again will return None. This method may also
         invoke some additional custom-defined clearing actions (if supported
         by implementation).
+
+        :param exc_type:
+            Exception type.
+
+            This will be set with exception class object when underlying
+            factory is closed due to exception being raised.
+
+            ..versionadded:: 0.4.0
+
+        :param exc:
+            Exception object.
+
+            This will be set with exception instance when underlying factory is
+            closed due to exception being raised.
+
+            ..versionadded:: 0.4.0
+
+        :param tb:
+            Traceback object.
+
+            This will be set when underlying factory is closed due to exception
+            being raised.
+
+            ..versionadded:: 0.4.0
         """
 
 
@@ -122,6 +141,9 @@ class IUnboundFactory(abc.ABC):
     :class:`IUnboundFactoryRegistry` objects. The role of this class is to
     wrap user-specified factory functions that are being registered to
     providers.
+
+    ..deprecated:: 0.4.0
+        This will be removed from the public interface.
     """
 
     @property
@@ -153,6 +175,9 @@ class IUnboundFactoryRegistry(abc.ABC):
     Factory registries are used by :class:`IInjector` objects to find
     :class:`IUnboundFactory` object that matches key that was given to
     :meth:`IInjector.inject` call.
+
+    ..deprecated:: 0.4.0
+        This will be removed from the public interface.
     """
 
     @abc.abstractmethod
