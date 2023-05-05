@@ -105,6 +105,10 @@ workflows:
           name: "test-py310"
           ver_major: 3
           ver_minor: 10
+      - test:
+          name: "test-py311"
+          ver_major: 3
+          ver_minor: 11
       - publish-coverage:
           filters:
             branches:
@@ -115,6 +119,7 @@ workflows:
             - test-py38
             - test-py39
             - test-py310
+            - test-py311
           filters:
             branches:
               only: master
