@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tests/functional/test_async_generator_based_provider.py
 #
-# Copyright (C) 2021 - 2022 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2023 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
@@ -64,7 +64,9 @@ async def test_factory_function_is_called_only_once(injector, mock):
 
 
 @pytest.mark.asyncio
-async def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(injector, mock):
+async def test_when_exception_is_raised_when_under_context_manager_then_factory_is_properly_disposed(
+    injector, mock
+):
     exc = ValueError('an error')
     with pytest.raises(ValueError) as excinfo:
         mock.begin.expect_call().will_once(Return(123))
