@@ -22,10 +22,8 @@ commands:
             - ~/.cache/pypoetry/
   configure-git:
     steps:
-      - run: git config user.name "Maciej Wiatrzyk"
-      - run: git config user.email "maciej.wiatrzyk@wiatrzyk.com"
-      - run: git config committer.name "CircleCI"
-      - run: git config committer.email "noreply@circleci.com"
+      - run: git config user.name "CircleCI"
+      - run: git config user.email "noreply@circleci.com"
   push-to-git:
     steps:
       - run: git push --set-upstream origin $CIRCLE_BRANCH
@@ -51,7 +49,7 @@ jobs:
       - install-deps:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
-      - run: poetry run inv qa
+      - run: poetry run pytest
   publish-coverage:
     docker:
       - image: cimg/python:3.9
