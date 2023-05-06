@@ -1,3 +1,14 @@
+## v0.4.0 (2023-05-06)
+
+### Feat
+
+- add support for Python 3.11
+- extend API of IFactory.close for the purpose of solving issue #7
+
+### Fix
+
+- resolve issue #7
+
 ## v0.3.3 (2022-11-05)
 
 ### Fix
