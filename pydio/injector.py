@@ -48,7 +48,6 @@ class Injector(IInjector):
             self.close()
         else:
             self._do_close(exc_type, exc, tb)
-        return exc_type is not None
 
     async def __aexit__(self, exc_type, exc, tb):
         if exc_type is None:
@@ -57,7 +56,6 @@ class Injector(IInjector):
             maybe_coroutine = self._do_close(exc_type, exc, tb)
         if inspect.iscoroutine(maybe_coroutine):
             await maybe_coroutine
-        return exc_type is not None
 
     @property
     def _parent(self):
