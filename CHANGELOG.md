@@ -1,3 +1,9 @@
+## v0.4.1 (2023-05-12)
+
+### Fix
+
+- properly close injector when exception thrown in teardown phase
+
 ## v0.4.0 (2023-05-06)
 
 ### Feat
