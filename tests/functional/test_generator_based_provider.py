@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 
 import pytest
-from mockify.actions import Return
+from mockify.actions import Return, Raise
 
 from pydio.api import Injector, Provider
 
@@ -77,3 +77,35 @@ def test_when_exception_is_raised_when_under_context_manager_then_factory_is_pro
             mock.failed.expect_call(exc)
             raise exc
     assert excinfo.value is exc
+
+
+@pytest.mark.asyncio
+async def test_properly_close_injector_when_exception_is_raised_in_teardown_phase(mock):
+    provider = Provider()
+
+    @provider.provides('first')
+    def make_first():
+        yield 1
+        mock.first.done()
+
+    @provider.provides('second')
+    def make_second():
+        yield 2
+        mock.second.done()
+
+    @provider.provides('third')
+    async def make_third():
+        yield 3
+        mock.third.done()
+
+    with pytest.raises(ValueError) as excinfo:
+        async with Injector(provider) as injector:
+            assert not injector.is_closed()
+            assert (injector.inject('first')) == 1
+            assert (injector.inject('second')) == 2
+            assert (await injector.inject('third')) == 3
+            mock.first.done.expect_call().will_once(Raise(ValueError('an error')))
+            mock.second.done.expect_call()
+            mock.third.done.expect_call()
+    assert str(excinfo.value) == 'an error'
+    assert injector.is_closed()

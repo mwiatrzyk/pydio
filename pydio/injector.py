@@ -8,6 +8,7 @@
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
+import asyncio
 import inspect
 import threading
 import typing
@@ -128,18 +129,26 @@ class Injector(IInjector):
                     maybe_awaitable = child._do_close(exc_type, exc, tb)
                     if maybe_awaitable is not None:
                         awaitables.append(maybe_awaitable)
+                first_exc_raised = None
                 for instance in self._cache.values():
-                    maybe_awaitable = instance.close(exc_type, exc, tb)
-                    if maybe_awaitable is not None:
-                        awaitables.append(maybe_awaitable)
+                    try:
+                        maybe_awaitable = instance.close(exc_type, exc, tb)
+                        if maybe_awaitable is not None:
+                            awaitables.append(maybe_awaitable)
+                    except Exception as e:
+                        if first_exc_raised is None:
+                            first_exc_raised = e
                 if not provider.has_awaitables():
                     self._provider = None
+                    if first_exc_raised is not None:
+                        raise first_exc_raised
                 else:
 
                     async def do_async_close(awaitables):
                         self._provider = None
-                        for awaitable in awaitables:
-                            await awaitable
+                        await asyncio.gather(*awaitables)
+                        if first_exc_raised is not None:
+                            raise first_exc_raised
 
                     return do_async_close(awaitables)
 
