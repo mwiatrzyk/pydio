@@ -88,14 +88,6 @@ workflows:
   test:
     jobs:
       - test:
-          name: "test-py37"
-          ver_major: 3
-          ver_minor: 7
-      - test:
-          name: "test-py38"
-          ver_major: 3
-          ver_minor: 8
-      - test:
           name: "test-py39"
           ver_major: 3
           ver_minor: 9
@@ -107,6 +99,14 @@ workflows:
           name: "test-py311"
           ver_major: 3
           ver_minor: 11
+      - test:
+          name: "test-py311"
+          ver_major: 3
+          ver_minor: 12
+      - test:
+          name: "test-py311"
+          ver_major: 3
+          ver_minor: 13
       - publish-coverage:
           filters:
             branches:
