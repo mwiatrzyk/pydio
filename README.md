@@ -95,6 +95,13 @@ You have two options available:
 
 2) Take a tour around [functional tests](https://github.com/mwiatrzyk/pydio/tree/master/tests/functional).
 
+## Disclaimer
+
+**PyDio** is an independent open-source project for the Python ecosystem. It
+is not affiliated with, sponsored by, or endorsed by any company, organization,
+or product of the same or similar name. Any similarity in names is purely
+coincidental and does not imply any association.
+
 ## License
 
 This project is released under the terms of the MIT license.
