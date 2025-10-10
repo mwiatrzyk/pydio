@@ -1,3 +1,9 @@
+## v1.0.0 (2025-10-10)
+
+### Feat
+
+- add support for Python 3.12 and 3.13
+
 ## v0.4.1 (2023-05-12)
 
 ### Fix
