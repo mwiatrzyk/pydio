@@ -100,11 +100,11 @@ workflows:
           ver_major: 3
           ver_minor: 11
       - test:
-          name: "test-py311"
+          name: "test-py312"
           ver_major: 3
           ver_minor: 12
       - test:
-          name: "test-py311"
+          name: "test-py313"
           ver_major: 3
           ver_minor: 13
       - publish-coverage:
@@ -113,11 +113,11 @@ workflows:
               only: master
       - tag:
           requires:
-            - test-py37
-            - test-py38
             - test-py39
             - test-py310
             - test-py311
+            - test-py312
+            - test-py313
           filters:
             branches:
               only: master
