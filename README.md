@@ -8,13 +8,17 @@
 
 Simple and functional dependency injection toolkit for Python.
 
+## Name
+
+**PyDio** (pronounced: *"PAI-dee-o"*) stands for **Python Dependency Injection tOolkit**.
+
 ## About
 
-PyDio aims to be simple, yet still powerful, allowing you to feed
-dependencies inside your application in a flexible way. PyDio design is based
-on simple assumption, that dependency injection can be achieved using simple
-**key-to-function** map, where **key** specifies **type of object** you want
-to inject and **function** is a **factory** function that creates
+PyDio aims to be simple, yet still powerful, allowing you to feed dependencies
+inside your application in a flexible way. PyDio design is based on simple
+assumption that dependency injection can be achieved using a straightforward
+**key-to-function** mapping, where **key** specifies **type of object** you
+want to inject and **function** is a **factory** function that creates
 **instances** of that type.
 
 In PyDio, this is implemented using **providers** and **injectors**. You use
@@ -97,7 +101,7 @@ You have two options available:
 
 ## Disclaimer
 
-**PyDio** is an independent open-source project for the Python ecosystem. It
+**PyDio** is an independent open-source project in the Python ecosystem. It
 is not affiliated with, sponsored by, or endorsed by any company, organization,
 or product of the same or similar name. Any similarity in names is purely
 coincidental and does not imply any association.
