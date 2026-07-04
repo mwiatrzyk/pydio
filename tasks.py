@@ -27,7 +27,7 @@ def check_tests(ctx: Context):
 
 
 @task(help={"fail_under": "The minimum accepted coverage level."})
-def check_coverage(ctx, fail_under=98):
+def check_coverage(ctx: Context, fail_under: int=98):
     """Run tests with coverage check."""
     ctx.run(
         f"pytest tests/ --cov=pydio --cov-branch --cov-fail-under={fail_under} "
@@ -37,7 +37,7 @@ def check_coverage(ctx, fail_under=98):
 
 
 @task
-def check_docs(ctx):
+def check_docs(ctx: Context):
     """Run documentation tests."""
     ctx.run("sphinx-build -M doctest docs/source docs/build")
 
@@ -53,34 +53,34 @@ def check(ctx: Context, fix: bool = False):
     ctx.run("inv check-docs")
 
 
-@task
-def serve_cov(ctx, host="localhost", port=8000):
+@task(help={"port": "The bind port for local HTTP server."})
+def serve_coverage(ctx: Context, port: int=8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
-    ctx.run("inv coverage -f0")
-    ctx.run("python -m http.server {} -d reports/coverage/html -b {}".format(port, host))
+    ctx.run("inv check-coverage --fail-under=0")
+    ctx.run(f"python -m http.server {port} -d reports/coverage/html")
 
 
 @task
-def build_docs(ctx):
+def build_docs(ctx: Context):
     """Build Sphinx documentation."""
     ctx.run("sphinx-build -M html docs/source docs/build")
 
 
 @task
-def build_pkg(ctx):
+def build_pkg(ctx: Context):
     """Build a distribution package."""
     ctx.run("uv build")
 
 
 @task(build_docs)
-def serve_docs(ctx, port=8000):
+def serve_docs(ctx: Context, port: int=8000):
     """Build documentation and serve it locally using built-in HTTP server."""
-    ctx.run(f"python -m http.server -d docs/build/html -b {port}")
+    ctx.run(f"python -m http.server {port} -d docs/build/html")
 
 
 @task
-def clean(ctx):
+def clean(ctx: Context):
     """Clean working directory."""
     ctx.run('find . -name "*.pyc" -delete')
     ctx.run('find . -type d -name "__pycache__" -empty -delete')
