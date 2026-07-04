@@ -10,4 +10,4 @@
 # ---------------------------------------------------------------------------
 from contextlib import AbstractAsyncContextManager
 
-__all__ = ['AbstractAsyncContextManager']
+__all__ = ["AbstractAsyncContextManager"]

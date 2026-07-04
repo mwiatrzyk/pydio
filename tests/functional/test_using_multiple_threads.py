@@ -36,10 +36,7 @@ def test_factory_function_is_called_once_for_multiple_threads():
         provider.register_func(key, factory)
     injector = Injector(provider)
 
-    threads = [
-        threading.Thread(target=run)
-        for _ in range(multiprocessing.cpu_count())
-    ]
+    threads = [threading.Thread(target=run) for _ in range(multiprocessing.cpu_count())]
 
     for thread in threads:
         thread.start()

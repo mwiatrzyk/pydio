@@ -17,12 +17,10 @@ from typing import Awaitable, Hashable, Optional, TypeVar, Union
 
 from . import _compat
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-class IInjector(
-    contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager
-):
+class IInjector(contextlib.AbstractContextManager, _compat.AbstractAsyncContextManager):
     """Definition of injector interface."""
 
     @abc.abstractmethod
@@ -45,7 +43,7 @@ class IInjector(
         """
 
     @abc.abstractmethod
-    def scoped(self, scope: Hashable, env: Hashable = None) -> 'IInjector':
+    def scoped(self, scope: Hashable, env: Hashable = None) -> "IInjector":
         """Create scoped injector that is a child of current one.
 
         Scoped injectors can only operate on
@@ -100,12 +98,7 @@ class IFactory(abc.ABC):
         """
 
     @abc.abstractmethod
-    def close(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc: BaseException = None,
-        tb=None
-    ):
+    def close(self, exc_type: typing.Type[BaseException] = None, exc: BaseException = None, tb=None):
         """Close this factory.
 
         When called, underlying instance is cleared and calling
@@ -186,9 +179,7 @@ class IUnboundFactoryRegistry(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get(self,
-            key: Hashable,
-            env: Hashable = None) -> Optional[IUnboundFactory]:
+    def get(self, key: Hashable, env: Hashable = None) -> Optional[IUnboundFactory]:
         """Get :class:`IUnboundFactory` registered for given key and
         environment (if given).
 

@@ -17,21 +17,19 @@ from pydio.base import IInjector
 
 
 class TestProviderErrors:
-
     def test_double_registration_error(self):
-        uut = Provider.DoubleRegistrationError(key='foo', env='dummy')
+        uut = Provider.DoubleRegistrationError(key="foo", env="dummy")
         assert str(uut) == "Cannot register twice for: key='foo', env='dummy'"
 
 
 class TestProvider:
-
     @pytest.fixture
     def uut(self):
         return Provider()
 
     @pytest.fixture
     def injector(self):
-        mock = ABCMock('injector', IInjector)
+        mock = ABCMock("injector", IInjector)
         with satisfied(mock):
             yield mock
 
@@ -39,27 +37,25 @@ class TestProvider:
         return key
 
     def test_one_key_cannot_be_used_twice(self, uut):
-        uut.register_func('foo', self.factory_function)
+        uut.register_func("foo", self.factory_function)
         with pytest.raises(Provider.DoubleRegistrationError) as excinfo:
-            uut.register_func('foo', self.factory_function)
-        assert excinfo.value.key == 'foo'
+            uut.register_func("foo", self.factory_function)
+        assert excinfo.value.key == "foo"
 
-    def test_if_attached_provider_contains_duplicated_keys_it_will_be_rejected(
-        self, uut
-    ):
+    def test_if_attached_provider_contains_duplicated_keys_it_will_be_rejected(self, uut):
         other = Provider()
-        other.register_func('foo', self.factory_function)
-        uut.register_func('foo', self.factory_function)
+        other.register_func("foo", self.factory_function)
+        uut.register_func("foo", self.factory_function)
         with pytest.raises(Provider.DoubleRegistrationError):
             uut.attach(other)
 
     def test_register_instance(self, uut, injector):
-        uut.register_instance('foo', 123)
-        unbound_factory = uut.get('foo')
+        uut.register_instance("foo", 123)
+        unbound_factory = uut.get("foo")
         factory = unbound_factory.bind(injector)
         assert factory.get_instance() == 123
 
     def test_instance_cannot_be_registered_if_key_is_already_in_use(self, uut):
-        uut.register_func('foo', self.factory_function)
+        uut.register_func("foo", self.factory_function)
         with pytest.raises(Provider.DoubleRegistrationError):
-            uut.register_instance('foo', 123)
+            uut.register_instance("foo", 123)

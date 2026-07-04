@@ -24,7 +24,7 @@ from .keys import Variant
 from .provider import Provider
 
 __all__ = [
-    'Injector',
-    'Provider',
-    'Variant',
+    "Injector",
+    "Provider",
+    "Variant",
 ]

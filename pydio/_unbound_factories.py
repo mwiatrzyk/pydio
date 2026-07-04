@@ -16,7 +16,6 @@ from .base import IUnboundFactory
 
 
 class UnboundFunctionFactory(IUnboundFactory):
-
     def __init__(self, func, key, scope=None, env=None):  # pylint: disable=too-many-arguments
         self._factory_class = self.__get_factory_class_for(func)
         self._key = key
@@ -51,17 +50,16 @@ class UnboundFunctionFactory(IUnboundFactory):
         # would like to rewrite this part to allow matching by annotation, so
         # different names could be used
         kwargs = {}
-        if 'injector' in self._func_params:
-            kwargs['injector'] = injector
-        if 'key' in self._func_params:
-            kwargs['key'] = self._key
-        if 'env' in self._func_params:
-            kwargs['env'] = self._env
+        if "injector" in self._func_params:
+            kwargs["injector"] = injector
+        if "key" in self._func_params:
+            kwargs["key"] = self._key
+        if "env" in self._func_params:
+            kwargs["env"] = self._env
         return functools.partial(self._func, **kwargs)
 
 
 class UnboundInstanceFactory(IUnboundFactory):
-
     def __init__(self, value, scope=None, env=None):
         self._value = value
         self._scope = scope

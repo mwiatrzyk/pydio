@@ -46,11 +46,9 @@ class Provider(IUnboundFactoryRegistry):
     def has_awaitables(self):
         """See :meth:`IUnboundFactoryRegistry.has_awaitables`."""
         with self._lock:
-            return any(
-                factory.is_awaitable() for factory in self._iter_factory_funcs()
-            )
+            return any(factory.is_awaitable() for factory in self._iter_factory_funcs())
 
-    def attach(self, provider: 'Provider'):
+    def attach(self, provider: "Provider"):
         """Attach given provider to this provider.
 
         This effectively extends current provider with object factories
@@ -62,8 +60,7 @@ class Provider(IUnboundFactoryRegistry):
             for key, envs in provider._unbound_factories.items():  # pylint: disable=protected-access
                 for env, unbound_factory in envs.items():
                     self._check_key_availability(key, env)
-                    self._unbound_factories.setdefault(key, {}
-                                                       )[env] = unbound_factory
+                    self._unbound_factories.setdefault(key, {})[env] = unbound_factory
 
     def register_func(self, key, func, scope=None, env=None):
         """Register user factory function.
@@ -87,8 +84,9 @@ class Provider(IUnboundFactoryRegistry):
         """
         with self._lock:
             self._check_key_availability(key, env)
-            self._unbound_factories.setdefault(key, {})[env] =\
-                _unbound_factories.UnboundFunctionFactory(func, key, scope=scope, env=env)
+            self._unbound_factories.setdefault(key, {})[env] = _unbound_factories.UnboundFunctionFactory(
+                func, key, scope=scope, env=env
+            )
 
     def register_instance(self, key, value, scope=None, env=None):
         """Same as :meth:`register_func`, but for registration of constant
@@ -99,8 +97,9 @@ class Provider(IUnboundFactoryRegistry):
         """
         with self._lock:
             self._check_key_availability(key, env)
-            self._unbound_factories.setdefault(key, {})[env] =\
-                _unbound_factories.UnboundInstanceFactory(value, scope=scope, env=env)
+            self._unbound_factories.setdefault(key, {})[env] = _unbound_factories.UnboundInstanceFactory(
+                value, scope=scope, env=env
+            )
 
     def provides(self, key, scope=None, env=None):
         """Same as :meth:`register_func`, but to be used as a decorator.
@@ -134,6 +133,7 @@ class Provider(IUnboundFactoryRegistry):
         :param env:
             Registered environment
         """
+
         message_template = "Cannot register twice for: key={self.key!r}, env={self.env!r}"
 
         def __init__(self, key, env):
@@ -141,8 +141,8 @@ class Provider(IUnboundFactoryRegistry):
 
         @property
         def key(self) -> Hashable:
-            return self.params['key']
+            return self.params["key"]
 
         @property
         def env(self) -> Hashable:
-            return self.params['env']
+            return self.params["env"]

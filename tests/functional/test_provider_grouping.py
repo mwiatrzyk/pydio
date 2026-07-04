@@ -28,7 +28,6 @@ def make_bar():
 
 
 class TestProviderGrouping:
-
     @pytest.fixture
     def injector(self):
         provider = Provider()
@@ -36,8 +35,6 @@ class TestProviderGrouping:
         provider.attach(bar_provider)
         return Injector(provider)
 
-    def test_injector_should_inject_properly_when_provider_grouping_is_used(
-        self, injector
-    ):
+    def test_injector_should_inject_properly_when_provider_grouping_is_used(self, injector):
         assert isinstance(injector.inject(IFoo), Foo)
         assert isinstance(injector.inject(IBar), Bar)
