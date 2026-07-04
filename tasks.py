@@ -27,7 +27,7 @@ def check_tests(ctx: Context):
 
 
 @task(help={"fail_under": "The minimum accepted coverage level."})
-def check_coverage(ctx: Context, fail_under: int=98):
+def check_coverage(ctx: Context, fail_under: int = 98):
     """Run tests with coverage check."""
     ctx.run(
         f"pytest tests/ --cov=pydio --cov-branch --cov-fail-under={fail_under} "
@@ -54,7 +54,7 @@ def check(ctx: Context, fix: bool = False):
 
 
 @task(help={"port": "The bind port for local HTTP server."})
-def serve_coverage(ctx: Context, port: int=8000):
+def serve_coverage(ctx: Context, port: int = 8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
     ctx.run("inv check-coverage --fail-under=0")
@@ -74,7 +74,7 @@ def build_pkg(ctx: Context):
 
 
 @task(build_docs)
-def serve_docs(ctx: Context, port: int=8000):
+def serve_docs(ctx: Context, port: int = 8000):
     """Build documentation and serve it locally using built-in HTTP server."""
     ctx.run(f"python -m http.server {port} -d docs/build/html")
 
@@ -84,3 +84,4 @@ def clean(ctx: Context):
     """Clean working directory."""
     ctx.run('find . -name "*.pyc" -delete')
     ctx.run('find . -type d -name "__pycache__" -empty -delete')
+    ctx.run("git clean -xdf --exclude .venv")
