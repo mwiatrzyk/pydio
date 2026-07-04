@@ -24,7 +24,7 @@ src_dir = os.path.join(this_dir, "..", "..")
 
 sys.path.insert(0, src_dir)
 
-import pydio
+import pydio  # noqa
 
 # -- Project information -----------------------------------------------------
 

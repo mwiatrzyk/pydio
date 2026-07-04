@@ -98,7 +98,7 @@ class IFactory(abc.ABC):
         """
 
     @abc.abstractmethod
-    def close(self, exc_type: typing.Type[BaseException] = None, exc: BaseException = None, tb=None):
+    def close(self, exc_type: typing.Type[BaseException] = None, exc: BaseException = None, tb=None):  # type: ignore
         """Close this factory.
 
         When called, underlying instance is cleared and calling

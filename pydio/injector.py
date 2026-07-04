@@ -111,14 +111,14 @@ class Injector(IInjector):
             injector = self.__class__(self._provider, env=env or self._env)
             self._child_injectors.append(injector)
             injector._parent = self  # pylint: disable=protected-access
-            injector._scope = scope  # pylint: disable=protected-access
+            injector._scope = scope  # type: ignore
             return injector
 
     def close(self) -> Optional[Awaitable[None]]:
         """See :meth:`pydio.base.IInjector.close`."""
         return self._do_close()
 
-    def _do_close(self, exc_type=None, exc=None, tb=None) -> Optional[Awaitable[None]]:
+    def _do_close(self, exc_type=None, exc=None, tb=None) -> Optional[Awaitable[None]]:  # type: ignore
         if self._provider is not None:
             with self._lock:
                 provider = self._provider
@@ -137,7 +137,7 @@ class Injector(IInjector):
                         if first_exc_raised is None:
                             first_exc_raised = e
                 if not provider.has_awaitables():
-                    self._provider = None
+                    self._provider = None  # type: ignore
                     if first_exc_raised is not None:
                         raise first_exc_raised
                 else:

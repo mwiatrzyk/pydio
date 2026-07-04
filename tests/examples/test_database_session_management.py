@@ -16,8 +16,6 @@ from mockify.core import ordered
 from mockify.mock import Mock
 
 from pydio.api import Injector, Provider
-from pydio.injector import Injector
-from pydio.provider import Provider
 
 
 class ITodoItemStorage(abc.ABC):
@@ -54,7 +52,7 @@ def create_connection(injector: Injector):
     with database.begin() as session:
         try:
             yield session
-        except:
+        except Exception:
             session.rollback()
         else:
             session.commit()
