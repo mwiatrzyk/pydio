@@ -1,6 +1,6 @@
 import pytest
 
-from pydio import _export_list
+from pydio.v1 import _export_list
 
 UUT = _export_list.ExportList
 

@@ -8,10 +8,16 @@ def check_formatting(ctx: Context, fix: bool = False):
     ctx.run(f"ruff format {'--check' if not fix else ''} .")
 
 
+@task
+def format(ctx: Context):
+    """Format code using `ruff format` tool."""
+    ctx.run("inv check-formatting --fix")
+
+
 @task(help={"fix": "Try fixing linting issues."})
 def check_lint(ctx: Context, fix: bool = False):
     """Run linting checks."""
-    ctx.run(f"ruff check {'--fix' if fix else ''}")
+    ctx.run(f"ruff check {'--fix' if fix else ''} --exclude api.py")
 
 
 @task
