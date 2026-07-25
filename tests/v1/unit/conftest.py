@@ -23,7 +23,7 @@ def factory_mock():
 
 @pytest.fixture
 def generic_mock():
-    mock = Mock("mock")
+    mock = Mock("generic_mock")
     with satisfied(mock):
         yield mock
 

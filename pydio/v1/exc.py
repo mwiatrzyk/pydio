@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from pydio.v1 import _export_list, _utils
-from pydio.v1.interface import EnvType, ScopeType
+from pydio.v1.interface import EnvType, ScopeType, SupportsAsyncInject, SupportsInject
 
 __all__ = export = _export_list.ExportList()  # type: ignore
 
@@ -16,13 +16,8 @@ class PyDIOError(Exception):
 
 
 @export
-class UserFactoryDeclarationError(PyDIOError):
-    """Raised when user-defined factory function is incorrectly declared and
-    cannot be used.
-
-    This may happen if incorrect parameters are used in declaration, or if
-    factory cannot be used with current injector.
-    """
+class FactoryDeclarationError(PyDIOError):
+    """Raised when user-defined factory function is incorrectly declared."""
 
     #: The user-defined factory with incorrect declaration.
     func: Callable
@@ -33,7 +28,7 @@ class UserFactoryDeclarationError(PyDIOError):
     #: The hint text.
     hint: str | None
 
-    def __init__(self, func: Callable, reason: str, hint: str | None = None):
+    def __init__(self, func: Callable, reason: str, *, hint: str | None = None):
         super().__init__()
         self.func = func
         self.reason = reason
@@ -52,7 +47,7 @@ class UserFactoryDeclarationError(PyDIOError):
         return str(_utils.get_func_signature(self.func))
 
     def __str__(self) -> str:
-        rows = [f"Declaration error in file {self.func_filename}, line {self.func_lineno}:"]
+        rows = [f"For factory declared in file {self.func_filename}, line {self.func_lineno}:"]
         data = {
             "reason": self.reason,
             "hint": self.hint,
@@ -64,6 +59,57 @@ class UserFactoryDeclarationError(PyDIOError):
         }
         _utils.format_detailed_error(rows, data, indent_char="  ")
         return "\n".join(rows)
+
+
+@export
+class AsyncInjectorRequiredError(PyDIOError):
+    """Raised when factory requires async injector but non-async was given."""
+
+    #: The factory function.
+    func: Callable
+
+    def __init__(self, func: Callable):
+        super().__init__()
+        self.func = func
+
+    @property
+    def func_filename(self) -> str:
+        return self.func.__code__.co_filename
+
+    @property
+    def func_lineno(self) -> int:
+        return self.func.__code__.co_firstlineno
+
+    def __str__(self) -> str:
+        # TODO: Better error formatting, and maybe some more info to be included.
+        sig = _utils.get_func_signature(self.func)
+        sig_str = f"{self.func.__name__}{sig}{sig.return_annotation}"
+        rows = [f"For factory {self.func.__name__!r} defined in {self.func_filename}, line {self.func_lineno}"]
+        data = {
+            "Factory signature": sig_str,
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
+
+
+@export
+class IncompatibleInjectorUsedError(PyDIOError):
+    """Raised when async injector was tried to be used by a non-async factory,
+    or non-async injector was tried to be used by an async factory."""
+
+    #: The factory that was called.
+    factory: Callable
+
+    #: The incompatible injector that was tried to be used.
+    injector: SupportsInject | SupportsAsyncInject
+
+    def __init__(self, factory: Callable, injector: SupportsInject | SupportsAsyncInject):
+        super().__init__()
+        self.factory = factory
+        self.injector = injector
+
+    def __str__(self) -> str:
+        return "Incompatible injector used"
 
 
 @export

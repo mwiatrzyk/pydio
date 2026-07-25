@@ -27,11 +27,21 @@ T = TypeVar("T")
 
 T_co = TypeVar("T_co", covariant=True)
 
-#: Type alias for user callables that are registered in provider.
-FuncType = Callable[
-    [Union["SupportsInject", "SupportsAsyncInject"]],
-    Union[T, Awaitable[T], Generator[T, None, None], AsyncGenerator[T, None]],
-]
+#: Type alias for :obj:`FuncType` result.
+FuncResult = Union[T, Generator[T, None, None]]
+
+#: Type alias for :obj:`AsyncFuncType` result.
+AsyncFuncResult = Union[Awaitable[T], AsyncGenerator[T, None]]
+
+#: Type alias for supported user-defined callables.
+FuncType = Callable[[Union["SupportsInject", "SupportsAsyncInject"]], FuncResult[T]]
+
+#: Type alias for supported user-defined async callables.
+AsyncFuncType = Callable[["SupportsAsyncInject"], AsyncFuncResult[T]]
+
+#: Union of :obj:`FuncType` and :obj:`AsyncFuncType`.
+# AnyFuncType = Union[FuncType[T], AsyncFuncType[T]]
+AnyFuncType = Callable[[Union["SupportsInject", "SupportsAsyncInject"]], Union[FuncResult[T], AsyncFuncResult[T]]]
 
 #: Type alias for scope type.
 ScopeType = tuple[str, ...]

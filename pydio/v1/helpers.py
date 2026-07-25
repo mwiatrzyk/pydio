@@ -6,8 +6,8 @@ from typing import Any, Annotated, cast
 from . import _export_list, _utils, _factories
 from .interface import (
     T,
+    AnyFuncType,
     EnvType,
-    FuncType,
     AsyncResourceFactoryLike,
     ResourceFactoryLike,
     ScopeType,
@@ -107,6 +107,20 @@ def as_async_resource_factory(obj: Any) -> AsyncResourceFactoryLike | None:
 
 
 @export
+def as_injector(obj: Any) -> SupportsInject | None:
+    """Check if given *obj* implements
+    :class:`pydio.v1.interface.SupportsInject` protocol.
+
+    If yes, then return *obj* as the mentioned type, or otherwise return
+    ``None``.
+    """
+    maybe_inject = getattr(obj, "inject", None)
+    if maybe_inject is not None and callable(maybe_inject) and not inspect.iscoroutinefunction(type(obj).inject):
+        return cast(SupportsInject, obj)
+    return None
+
+
+@export
 def as_async_injector(obj: Any) -> SupportsAsyncInject | None:
     """Check if *obj* implements
     :class:`pydio.v1.interface.SupportsAsyncInject` protocol.
@@ -124,7 +138,7 @@ def as_async_injector(obj: Any) -> SupportsAsyncInject | None:
 def register_func(
     provider: SupportsRegisterFactory,
     typ: type[T] | Any,
-    func: FuncType[T],
+    func: AnyFuncType[T],
     *,
     scope: ScopeType = ScopeType(),
     env: EnvType = None,
@@ -163,10 +177,10 @@ def register_func(
         same scope and environment.
     """
     unpacked_func = _utils.unpack_partial(func)
-    if inspect.iscoroutinefunction(unpacked_func):
-        return provider.register_factory(typ, _factories.AsyncFunctionFactory(unpacked_func), scope=scope, env=env)
     if inspect.isasyncgenfunction(unpacked_func):
         return provider.register_factory(typ, _factories.AsyncGeneratorFactory(unpacked_func), scope=scope, env=env)
+    if inspect.iscoroutinefunction(unpacked_func):
+        return provider.register_factory(typ, _factories.AsyncFunctionFactory(unpacked_func), scope=scope, env=env)
     if inspect.isgeneratorfunction(unpacked_func):
         return provider.register_factory(typ, _factories.GeneratorFactory(unpacked_func), scope=scope, env=env)
     if callable(unpacked_func):
