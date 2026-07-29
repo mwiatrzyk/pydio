@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from pydio.v1 import _export_list, _utils
-from pydio.v1.interface import EnvType, ScopeType, SupportsAsyncInject, SupportsInject
+from pydio.v1.interface import (
+    AsyncResourceFactoryLike,
+    EnvType,
+    ResourceFactoryLike,
+    ScopeType,
+    SupportsAsyncInject,
+    SupportsInject,
+)
 
 __all__ = export = _export_list.ExportList()  # type: ignore
 
@@ -113,6 +120,34 @@ class IncompatibleInjectorUsedError(PyDIOError):
 
 
 @export
+class IncompatibleFactoryProvidedError(PyDIOError):
+    """Raised when factory found for a requested type cannot be used by current
+    injector.
+
+    For example, synchronous injectors cannot create resources using async
+    factories.
+    """
+
+    #: The injector that was used
+    injector: SupportsInject | SupportsAsyncInject
+
+    #: The incompatible factory found.
+    factory: ResourceFactoryLike | AsyncResourceFactoryLike
+
+    def __init__(
+        self, injector: SupportsInject | SupportsAsyncInject, factory: ResourceFactoryLike | AsyncResourceFactoryLike
+    ):
+        super().__init__()
+        self.injector = injector
+        self.factory = factory
+
+    def __str__(self) -> str:
+        return (
+            f"Injector {self.injector!r} found an incompatible resource factory {self.factory!r} that cannot be used."
+        )
+
+
+@export
 class FactoryLookupError(PyDIOError):
     """Base class for factory lookup errors."""
 
@@ -195,3 +230,19 @@ class FactoryAlreadyExistsError(PyDIOError):
 
     def __str__(self):
         return f"Factory already exists: typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
+
+
+@export
+class InjectorClosedError(PyDIOError):
+    """Raised when operation on an already closed injector is tried to be
+    executed."""
+
+    #: The closed injector that is tried to be used.
+    injector: SupportsInject | SupportsAsyncInject
+
+    def __init__(self, injector: SupportsInject | SupportsAsyncInject):
+        super().__init__()
+        self.injector = injector
+
+    def __str__(self) -> str:
+        return f"Cannot execute operations on a closed injector {self.injector!r} object"

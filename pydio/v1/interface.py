@@ -21,7 +21,9 @@ from typing import (
 
 from pydio.v1 import _export_list
 
-__all__ = export = _export_list.ExportList(["UserFactoryType", "ScopeType", "EnvType"])  # type: ignore
+__all__ = export = _export_list.ExportList([
+    "FuncResult", "AsyncFuncResult", "FuncType", "AsyncFuncType",
+    "AnyFuncType", "ScopeType", "EnvType"])  # type: ignore
 
 T = TypeVar("T")
 
@@ -59,7 +61,7 @@ class ResourceDisposerLike(Protocol):
         exc_type: type[BaseException] | None = None,
         exc: BaseException | None = None,
         tb: TracebackType | None = None,
-    ):
+    ) -> None:
         """Drop associated resource.
 
         :param exc_type:
@@ -108,7 +110,7 @@ class AsyncResourceDisposerLike(Protocol):
         exc_type: type[BaseException] | None = None,
         exc: BaseException | None = None,
         tb: TracebackType | None = None,
-    ):
+    ) -> None:
         """Async version of :meth:`ResourceDisposer.dispose` method."""
 
 
@@ -145,7 +147,37 @@ class SupportsAsyncInject(Protocol):
 
 @export
 class InjectorLike(SupportsInject, Protocol):
-    """Protocol defining interface for injectors."""
+    """Protocol defining interface for synchronous injectors."""
+
+    def __enter__(self) -> "InjectorLike":
+        """Enter context manager for this injector."""
+        ...
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
+    ) -> bool | None:
+        """Exit context manager created for this injector.
+
+        When exiting context manager scope, the injector is closed and all
+        resources it created are disposed.
+        """
+        ...
+
+    def scoped(self, name: str) -> "InjectorLike":
+        """Create a scoped injector.
+
+        :param name:
+            The name of the child scope.
+        """
+        ...
+
+    def is_closed(self) -> bool:
+        """Check if this injector is closed."""
+        ...
+
+    def close(self) -> None:
+        """Dispose all managed resources and close the injector."""
+        ...
 
 
 @export

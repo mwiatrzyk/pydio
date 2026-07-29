@@ -8,27 +8,6 @@ from mockify.api import Mock, satisfied
 
 
 @pytest.fixture
-def injector_mock():
-    mock = Mock("injector_mock")
-    with satisfied(mock):
-        yield mock
-
-
-@pytest.fixture
-def factory_mock():
-    mock = Mock("factory_mock")
-    with satisfied(mock):
-        yield mock
-
-
-@pytest.fixture
-def generic_mock():
-    mock = Mock("generic_mock")
-    with satisfied(mock):
-        yield mock
-
-
-@pytest.fixture
 def injector_stub(generic_mock):
 
     class InjectorStub:
