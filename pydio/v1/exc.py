@@ -209,6 +209,19 @@ class OutOfScopeError(FactoryLookupError):
 
 
 @export
+class DuplicateScopeError(PyDIOError):
+    """Raised when trying to create a scoped injector that duplicates already
+    existing scope."""
+
+    #: The scope that was found duplicated.
+    scope: ScopeType
+
+    def __init__(self, scope: ScopeType):
+        super().__init__()
+        self.scope = scope
+
+
+@export
 class FactoryAlreadyExistsError(PyDIOError):
     """Raised when there is an existing factory found for given type, scope and
     environment."""

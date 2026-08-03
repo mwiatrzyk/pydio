@@ -4,8 +4,6 @@ from typing import Any
 
 import pytest
 
-from mockify.api import Mock, satisfied
-
 
 @pytest.fixture
 def injector_stub(generic_mock):

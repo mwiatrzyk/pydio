@@ -19,11 +19,4 @@ from .injectors import *
 from .interface import *
 from .providers import *
 
-__all__ = (
-    *_decorators_all,
-    *_exc_all,
-    *_helpers_all,
-    *_injectors_all,
-    *_interface_all,
-    *_providers_all
-)  # type: ignore
+__all__ = (*_decorators_all, *_exc_all, *_helpers_all, *_injectors_all, *_interface_all, *_providers_all)  # type: ignore

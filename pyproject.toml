@@ -16,7 +16,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "typing-extensions>=4.16.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mwiatrzyk/pydio"

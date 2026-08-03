@@ -6,6 +6,7 @@ for structural typing (in case of protocols).
 
 from __future__ import annotations
 
+import inspect
 from types import TracebackType
 from typing import (
     Any,
@@ -19,11 +20,15 @@ from typing import (
     Union,
 )
 
-from pydio.v1 import _export_list
+from typing_extensions import TypeIs
 
-__all__ = export = _export_list.ExportList([
-    "FuncResult", "AsyncFuncResult", "FuncType", "AsyncFuncType",
-    "AnyFuncType", "ScopeType", "EnvType"])  # type: ignore
+from pydio.v1 import _export_list, _utils
+
+__all__ = export = _export_list.ExportList(
+    ["FuncResult", "AsyncFuncResult", "FuncType", "AsyncFuncType", "AnyFuncType", "ScopeType", "EnvType"]
+)  # type: ignore
+
+_unset = object()
 
 T = TypeVar("T")
 
@@ -147,20 +152,27 @@ class SupportsAsyncInject(Protocol):
 
 @export
 class InjectorLike(SupportsInject, Protocol):
-    """Protocol defining interface for synchronous injectors."""
+    """Protocol defining interface for synchronous injectors.
+
+    Injectors implementing this interface are meant to be used in non-async
+    environment, with non-async resource factories only; if async one is found
+    during lookup, :exc:`pydio.v1.exc.IncompatibleFactoryProvidedError` is
+    raised.
+
+    Injectors must be closed when no longer needed to invoke resource disposal
+    action for all resources that were injected at least once. Closing injector
+    can be done manually, by calling :meth:`close`, or automatically via
+    context manager (if injector was used as a context manager).
+    """
 
     def __enter__(self) -> "InjectorLike":
-        """Enter context manager for this injector."""
+        """Enter context manager created for this injector."""
         ...
 
     def __exit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
-    ) -> bool | None:
-        """Exit context manager created for this injector.
-
-        When exiting context manager scope, the injector is closed and all
-        resources it created are disposed.
-        """
+    ) -> None:
+        """Exit context manager created for this injector."""
         ...
 
     def scoped(self, name: str) -> "InjectorLike":
@@ -176,7 +188,62 @@ class InjectorLike(SupportsInject, Protocol):
         ...
 
     def close(self) -> None:
-        """Dispose all managed resources and close the injector."""
+        """Close this injector.
+
+        Calling this method disposes all resources and closes all scoped
+        injectors that were created by this injector.
+        """
+        ...
+
+
+@export
+class AsyncInjectorLike(SupportsAsyncInject, Protocol):
+    """Protocol defining interface for asynchronous injectors.
+
+    Unlike synchronous :class:`InjectorLike`, classes that implement this
+    interface can operate on both asynchronous and synchronous resource
+    factories.
+    """
+
+    async def __aenter__(self) -> "AsyncInjectorLike":
+        """Enter context manager for this injector."""
+        ...
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
+    ) -> None:
+        """Exit context manager created for this injector."""
+        ...
+
+    def scoped(self, name: str) -> "AsyncInjectorLike":
+        """Create a scoped injector inside this injector.
+
+        The created injector extends its parent's scope, so when parent
+        injector's scope is ``('foo',)``, the scope of a new scoped injector,
+        assuming ``'bar'`` given as a name, would become ``('foo', 'bar')``.
+
+        :param name:
+            The name to be added to current scope.
+        """
+        ...
+
+    def is_closed(self) -> bool:
+        """Check if this injector is closed.
+
+        This method will return ``True`` when either of these two events
+        happened:
+
+        - :meth:`close` was called,
+        - context manager created for this injector ended.
+        """
+        ...
+
+    async def close(self) -> None:
+        """Dispose all managed resources and close the injector.
+
+        If this injector has scoped injectors associated, then those are closed
+        as well recursively.
+        """
         ...
 
 
@@ -244,3 +311,60 @@ class ProviderLike(SupportsRegisterFactory, SupportsRequireFactory, Protocol):
 
     It combines factory registry and lookup capabilities.
     """
+
+
+class AsyncLockLike(Protocol):
+    """Interface for async locks."""
+
+    async def __aenter__(self) -> None: ...
+
+    async def __aexit__(self, exc_type, exc, tb): ...
+
+
+@export
+class AsyncBackendLike(Protocol):
+    """Protocol defining async backend interface required by PyDIO."""
+
+    def create_lock(self) -> AsyncLockLike:
+        """Create async lock.
+
+        Used to guard resource from simultaneous access from two different
+        coroutines.
+        """
+        ...
+
+
+@export
+def is_async_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[AsyncResourceFactoryLike[T]]:
+    """Check if given object implements :class:`AsyncResourceFactoryLike`
+    protocol.
+
+    :param obj:
+        The object to check.
+
+    :param typ:
+        The expected resource type.
+
+        This is optional and is only used to infer ``T``.
+    """
+    bound_create = getattr(obj, "create", _unset)
+    if bound_create is _unset:
+        return False
+    unbound_create = type(obj).create
+    _utils.not_used(typ)
+    return inspect.iscoroutinefunction(unbound_create)
+
+
+@export
+def is_async_resource_disposer(obj: Any) -> TypeIs[AsyncResourceDisposerLike]:
+    """Check if given object implements :class:`AsyncResourceFactoryLike`
+    protocol.
+
+    :param obj:
+        The object to check.
+    """
+    bound_dispose = getattr(obj, "dispose", _unset)
+    if bound_dispose is _unset:
+        return False
+    unbound_dispose = type(obj).dispose
+    return inspect.iscoroutinefunction(unbound_dispose)
