@@ -43,6 +43,25 @@ def not_used(*args) -> None:
     """A no-op helper for use with ignored function arguments."""
 
 
+def has_method(obj: Any, name: str) -> bool:
+    """Check if given object has method with given name which is a normal
+    Python function declared as ``def X()`` (i.e. not a coroutine).
+
+    :param obj:
+        The object to check.
+
+    :param name:
+        Method's name.
+    """
+    bound_method = getattr(obj, name, _unset)
+    if bound_method is _unset:
+        return False
+    unbound_method = getattr(type(obj), name, _unset)
+    if unbound_method is _unset:
+        return False
+    return inspect.isfunction(unbound_method) and not inspect.iscoroutinefunction(unbound_method)
+
+
 def has_coroutine_method(obj: Any, name: str) -> bool:
     """Check if given object has method with given name which is a
     coroutine.

@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 
 from pydio.v1.exc import FactoryAlreadyExistsError, FactoryNotFoundError, OutOfScopeError
-from pydio.v1.helpers import as_resource_factory, register_func, register_constant
+from pydio.v1.helpers import register_func, register_constant
 from pydio.v1.providers import Provider
+from pydio.v1.interface import is_resource_factory
 
 
 class TestProvider:
@@ -69,8 +70,8 @@ class TestProvider:
 
     def test_require_factory_falls_back_to_default_env(self, uut: UUT, injector_stub):
         register_constant(uut, int, 123)
-        factory = as_resource_factory(uut.require_factory(int, env="testing"))
-        assert factory is not None
+        factory = uut.require_factory(int, env="testing")
+        assert is_resource_factory(factory, int)
         obj, _ = factory.create(injector_stub)
         assert obj == 123
 
@@ -80,16 +81,16 @@ class TestProvider:
         register_func(uut, int, lambda _: 1)
         register_func(uut, int, lambda _: 2, scope=("a",))
         register_func(uut, int, lambda _: 3, scope=("a", "b"))
-        first = as_resource_factory(uut.require_factory(int, scope=("a", "b", "c")))
-        assert first is not None
+        first = uut.require_factory(int, scope=("a", "b", "c"))
+        assert is_resource_factory(first, int)
         obj, _ = first.create(injector_stub)
         assert obj == 3
-        second = as_resource_factory(uut.require_factory(int, scope=("a", "d")))
-        assert second is not None
+        second = uut.require_factory(int, scope=("a", "d"))
+        assert is_resource_factory(second, int)
         obj, _ = second.create(injector_stub)
         assert obj == 2
-        third = as_resource_factory(uut.require_factory(int, scope=("b",)))
-        assert third is not None
+        third = uut.require_factory(int, scope=("b",))
+        assert is_resource_factory(third, int)
         obj, _ = third.create(injector_stub)
         assert obj == 1
 
@@ -97,8 +98,8 @@ class TestProvider:
         child = Provider()
         register_func(child, int, lambda _: 123, scope=scope, env=env)
         uut.attach(child)
-        factory = as_resource_factory(uut.require_factory(int, scope=scope, env=env))
-        assert factory is not None
+        factory = uut.require_factory(int, scope=scope, env=env)
+        assert is_resource_factory(factory, int)
         obj, _ = factory.create(injector_stub)
         assert obj == 123
 
@@ -108,8 +109,8 @@ class TestProvider:
         register_func(two, int, lambda _: 123)
         uut.attach(one)
         uut.attach(two)
-        factory = as_resource_factory(uut.require_factory(int))
-        assert factory is not None
+        factory = uut.require_factory(int)
+        assert is_resource_factory(factory)
 
     def test_when_double_nested_providers_attached_then_found_in_grandchild(self, uut: UUT):
         grandchild = Provider()
@@ -117,8 +118,8 @@ class TestProvider:
         child = Provider()
         child.attach(grandchild)
         uut.attach(child)
-        factory = as_resource_factory(uut.require_factory(int))
-        assert factory is not None
+        factory = uut.require_factory(int)
+        assert is_resource_factory(factory, int)
 
     def test_when_registered_in_current_then_skip_recursing_into_nested(self, uut: UUT, injector_stub):
         grandchild = Provider()
@@ -127,8 +128,8 @@ class TestProvider:
         child.attach(grandchild)
         uut.attach(child)
         register_func(uut, int, lambda _: 456)
-        factory = as_resource_factory(uut.require_factory(int))
-        assert factory is not None
+        factory = uut.require_factory(int)
+        assert is_resource_factory(factory, int)
         obj, _ = factory.create(injector_stub)
         assert obj == 456
 

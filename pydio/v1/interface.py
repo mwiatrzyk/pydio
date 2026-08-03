@@ -6,7 +6,6 @@ for structural typing (in case of protocols).
 
 from __future__ import annotations
 
-import inspect
 from types import TracebackType
 from typing import (
     Any,
@@ -399,6 +398,24 @@ class AsyncBackendLike(Protocol):
 
 
 @export
+def is_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[ResourceFactoryLike[T]]:
+    """Check if given object implements :class:`ResourceFactoryLike`
+    protocol.
+
+    :param obj:
+        The object to check.
+
+    :param typ:
+        The type of objects that are expected to be produced by returned
+        factory.
+
+        This is optional and is only used to infer ``T``.
+    """
+    _utils.not_used(typ)
+    return _utils.has_method(obj, "create")
+
+
+@export
 def is_async_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[AsyncResourceFactoryLike[T]]:
     """Check if given object implements :class:`AsyncResourceFactoryLike`
     protocol.
@@ -411,12 +428,8 @@ def is_async_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[As
 
         This is optional and is only used to infer ``T``.
     """
-    bound_create = getattr(obj, "create", _unset)
-    if bound_create is _unset:
-        return False
-    unbound_create = type(obj).create
     _utils.not_used(typ)
-    return inspect.iscoroutinefunction(unbound_create)
+    return _utils.has_coroutine_method(obj, "create")
 
 
 @export
@@ -427,8 +440,24 @@ def is_async_resource_disposer(obj: Any) -> TypeIs[AsyncResourceDisposerLike]:
     :param obj:
         The object to check.
     """
-    bound_dispose = getattr(obj, "dispose", _unset)
-    if bound_dispose is _unset:
-        return False
-    unbound_dispose = type(obj).dispose
-    return inspect.iscoroutinefunction(unbound_dispose)
+    return _utils.has_coroutine_method(obj, "dispose")
+
+
+@export
+def supports_inject(obj: Any) -> TypeIs[SupportsInject]:
+    """Check if given object implements :class:`SupportsInject` interface.
+
+    :param obj:
+        The object to check.
+    """
+    return _utils.has_method(obj, "inject")
+
+
+@export
+def supports_async_inject(obj: Any) -> TypeIs[SupportsAsyncInject]:
+    """Check if given object implements :class:`SupportsAsyncInject` interface.
+
+    :param obj:
+        The object to check.
+    """
+    return _utils.has_coroutine_method(obj, "inject")

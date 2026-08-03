@@ -9,10 +9,7 @@ from .interface import (
     T,
     AnyFuncType,
     EnvType,
-    AsyncResourceFactoryLike,
-    ResourceFactoryLike,
     ScopeType,
-    SupportsAsyncInject,
     SupportsInject,
     SupportsRegisterFactory,
 )
@@ -66,73 +63,6 @@ def inject_annotated_type(injector: SupportsInject, typ: type[T], *args: Any) ->
     # TODO: Maybe there is a better way to construct Annotated?
     key = Annotated.__class_getitem__((typ, *args))  # type: ignore
     return cast(T, injector.inject(key))
-
-
-@export
-def as_resource_factory(obj: Any) -> ResourceFactoryLike | None:
-    """Check if given object is a resource factory.
-
-    If so, then return given object as
-    :class:`pydio.v1.interface.ResourceFactoryLike` object, otherwise return
-    ``None``.
-
-    :param typ:
-        The type that the factory uses.
-
-    :param obj:
-        The object to convert.
-    """
-    maybe_create = getattr(obj, "create", None)
-    if maybe_create is not None and callable(maybe_create):
-        return cast(ResourceFactoryLike, obj)
-    return None
-
-
-@export
-def as_async_resource_factory(obj: Any) -> AsyncResourceFactoryLike | None:
-    """Check if given object is an async resource factory.
-
-    If so, then return given object as
-    :class:`pydio.v1.interface.AsyncResourceFactoryLike` object, otherwise return
-    ``None``.
-
-    :param obj:
-        The object to convert.
-    """
-    obj = as_resource_factory(obj)
-    if obj is None:
-        return None
-    if inspect.iscoroutinefunction(obj.create):
-        return cast(AsyncResourceFactoryLike, obj)
-    return None
-
-
-@export
-def as_injector(obj: Any) -> SupportsInject | None:
-    """Check if given *obj* implements
-    :class:`pydio.v1.interface.SupportsInject` protocol.
-
-    If yes, then return *obj* as the mentioned type, or otherwise return
-    ``None``.
-    """
-    maybe_inject = getattr(obj, "inject", None)
-    if maybe_inject is not None and callable(maybe_inject) and not inspect.iscoroutinefunction(type(obj).inject):
-        return cast(SupportsInject, obj)
-    return None
-
-
-@export
-def as_async_injector(obj: Any) -> SupportsAsyncInject | None:
-    """Check if *obj* implements
-    :class:`pydio.v1.interface.SupportsAsyncInject` protocol.
-
-    If yes, then return *obj* as the mentioned type, or otherwise return
-    ``None``.
-    """
-    maybe_inject = getattr(obj, "inject", None)
-    if maybe_inject is not None and inspect.iscoroutinefunction(type(obj).inject):
-        return cast(SupportsAsyncInject, obj)
-    return None
 
 
 @export

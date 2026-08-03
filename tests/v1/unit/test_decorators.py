@@ -7,8 +7,7 @@ from mockify.api import Return
 
 from pydio.v1.providers import Provider
 from pydio.v1.decorators import provides
-from pydio.v1.helpers import as_resource_factory, as_async_resource_factory
-from pydio.v1.interface import SupportsInject, SupportsAsyncInject
+from pydio.v1.interface import SupportsInject, SupportsAsyncInject, is_async_resource_factory, is_resource_factory
 
 
 @pytest.fixture
@@ -24,8 +23,8 @@ class TestProvides:
             def make_object(injector: SupportsInject | SupportsAsyncInject):
                 return generic_mock(injector)
 
-            factory = as_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_resource_factory(factory, int)
             generic_mock.expect_call(injector_stub).will_once(Return(123))
             obj, _ = factory.create(injector_stub)
             assert obj == 123
@@ -36,8 +35,8 @@ class TestProvides:
             def make_object(injector: SupportsInject | SupportsAsyncInject):
                 return generic_mock(injector)
 
-            factory = as_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_resource_factory(factory, int)
             generic_mock.expect_call(async_injector_stub).will_once(Return(123))
             obj, _ = factory.create(async_injector_stub)
             assert obj == 123
@@ -49,8 +48,8 @@ class TestProvides:
             def make_object(injector, typ, scope, env):
                 return generic_mock(injector, typ, scope, env)
 
-            factory = as_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_resource_factory(factory, int)
             generic_mock.expect_call(injector_stub, int, scope, env).will_once(Return(123))
             obj, _ = factory.create(injector_stub)
             assert obj == 123
@@ -61,8 +60,8 @@ class TestProvides:
             async def make_object(injector, typ, scope, env):
                 return generic_mock(injector, typ, scope, env)
 
-            factory = as_async_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_async_resource_factory(factory, int)
             generic_mock.expect_call(async_injector_stub, int, scope, env).will_once(Return(123))
             obj, _ = await factory.create(async_injector_stub)
             assert obj == 123
@@ -74,8 +73,8 @@ class TestProvides:
             def make_object(foo: int, bar: float, baz: str):
                 return generic_mock(foo, bar, baz)
 
-            factory = as_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_resource_factory(factory, int)
             generic_mock.injector.inject.expect_call(int).will_once(Return(123))
             generic_mock.injector.inject.expect_call(float).will_once(Return(3.14))
             generic_mock.injector.inject.expect_call(str).will_once(Return("spam"))
@@ -89,8 +88,8 @@ class TestProvides:
             async def make_object(foo: int, bar: float, baz: str):
                 return generic_mock(foo, bar, baz)
 
-            factory = as_async_resource_factory(provider.require_factory(int, scope=scope, env=env))
-            assert factory is not None
+            factory = provider.require_factory(int, scope=scope, env=env)
+            assert is_async_resource_factory(factory, int)
             generic_mock.injector.inject.expect_call(int).will_once(Return(123))
             generic_mock.injector.inject.expect_call(float).will_once(Return(3.14))
             generic_mock.injector.inject.expect_call(str).will_once(Return("spam"))

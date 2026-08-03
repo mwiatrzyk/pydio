@@ -5,7 +5,7 @@ import inspect
 from typing import Any, AsyncGenerator, Callable, Generator
 
 from pydio.v1.exc import FactoryDeclarationError, IncompatibleInjectorUsedError
-from pydio.v1.helpers import as_async_injector, as_injector
+from pydio.v1.interface import supports_async_inject, supports_inject
 
 from . import _utils
 from .interface import (
@@ -86,7 +86,7 @@ def adapt_func_for_manual_mode(
         @functools.wraps(func)
         async def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T, None]:
             kw = make_kwargs(injector)
-            if "injector" in kw and as_async_injector(injector) is None:
+            if "injector" in kw and supports_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
             async for obj in func(**kw):
                 yield obj
@@ -98,7 +98,7 @@ def adapt_func_for_manual_mode(
         @functools.wraps(func)
         async def wrapped_coroutine(injector: SupportsInject | SupportsAsyncInject) -> T:
             kw = make_kwargs(injector)
-            if "injector" in kw and as_async_injector(injector) is None:
+            if "injector" in kw and supports_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
             return await func(**kw)
 
@@ -109,7 +109,7 @@ def adapt_func_for_manual_mode(
         @functools.wraps(func)
         def wrapped_generator(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
             kw = make_kwargs(injector)
-            if "injector" in kw and as_injector(injector) is None:
+            if "injector" in kw and supports_async_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
             yield from func(**kw)
 
@@ -120,7 +120,7 @@ def adapt_func_for_manual_mode(
         @functools.wraps(func)
         def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> T:
             kw = make_kwargs(injector)
-            if "injector" in kw and as_injector(injector) is None:
+            if "injector" in kw and supports_async_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
             return func(**kw)
 
@@ -145,7 +145,7 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
 
     async def async_resolve_deps(injector: SupportsInject | SupportsAsyncInject) -> dict:
         kw = {}
-        if declared_params and as_async_injector(injector) is None:
+        if declared_params and supports_inject(injector):
             raise IncompatibleInjectorUsedError(func, injector)
         for name, param in declared_params.items():
             kw[name] = await injector.inject(param.annotation)
@@ -153,7 +153,7 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
 
     def resolve_deps(injector: SupportsInject | SupportsAsyncInject) -> dict:
         kw = {}
-        if declared_params and as_injector(injector) is None:
+        if declared_params and supports_async_inject(injector):
             raise IncompatibleInjectorUsedError(func, injector)
         for name, param in declared_params.items():
             kw[name] = injector.inject(param.annotation)
