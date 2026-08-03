@@ -43,22 +43,7 @@ class Injector:
     def __exit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
     ) -> None:
-        self.__dispose_all(exc_type, exc, tb)
-
-    def __dispose_all(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc: BaseException | None = None,
-        tb: TracebackType | None = None,
-    ):
-        if self.__closed:
-            return
-        with self.__lock:
-            for _, disposer in self.__cache.values():
-                disposer.dispose(exc_type, exc, tb)
-            for scoped_injector in self.__scoped.values():
-                scoped_injector.__dispose_all(exc_type, exc, tb)
-            self.__closed = True
+        self.close(exc_type, exc, tb)
 
     def __assert_not_closed(self):
         if self.__closed:
@@ -94,8 +79,21 @@ class Injector:
             self.__cache[typ] = (obj, disposer)
             return obj
 
-    def close(self) -> None:
-        self.__dispose_all()
+    def close(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc: BaseException | None = None,
+        tb: TracebackType | None = None,
+        /,
+    ) -> None:
+        if self.__closed:
+            return
+        with self.__lock:
+            for _, disposer in self.__cache.values():
+                disposer.dispose(exc_type, exc, tb)
+            for scoped_injector in self.__scoped.values():
+                scoped_injector.close(exc_type, exc, tb)
+            self.__closed = True
 
 
 @export
@@ -123,29 +121,11 @@ class AsyncInjector:
     async def __aexit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
     ) -> None:
-        await self.__dispose_all(exc_type, exc, tb)
+        await self.close(exc_type, exc, tb)
 
     def __assert_not_closed(self):
         if self.__closed:
             raise InjectorClosedError(self)
-
-    async def __dispose_all(
-        self,
-        exc_type: type[BaseException] | None = None,
-        exc: BaseException | None = None,
-        tb: TracebackType | None = None,
-    ) -> None:
-        if self.__closed:
-            return
-        async with self.__lock:
-            for _, disposer in self.__cache.values():
-                if is_async_resource_disposer(disposer):
-                    await disposer.dispose(exc_type, exc, tb)
-                else:
-                    disposer.dispose(exc_type, exc, tb)
-            for scoped_injector in self.__scoped.values():
-                await scoped_injector.__dispose_all(exc_type, exc, tb)
-            self.__closed = True
 
     def scoped(self, name: str) -> "AsyncInjectorLike":
         self.__assert_not_closed()
@@ -180,5 +160,21 @@ class AsyncInjector:
     def is_closed(self) -> bool:
         return self.__closed
 
-    async def close(self) -> None:
-        await self.__dispose_all()
+    async def close(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc: BaseException | None = None,
+        tb: TracebackType | None = None,
+        /,
+    ) -> None:
+        if self.__closed:
+            return
+        async with self.__lock:
+            for _, disposer in self.__cache.values():
+                if is_async_resource_disposer(disposer):
+                    await disposer.dispose(exc_type, exc, tb)
+                else:
+                    disposer.dispose(exc_type, exc, tb)
+            for scoped_injector in self.__scoped.values():
+                await scoped_injector.close(exc_type, exc, tb)
+            self.__closed = True

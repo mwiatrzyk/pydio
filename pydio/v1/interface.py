@@ -172,7 +172,21 @@ class InjectorLike(SupportsInject, Protocol):
     def __exit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
     ) -> None:
-        """Exit context manager created for this injector."""
+        """Exit context manager created for this injector.
+
+        Exiting context manager is equivalent to calling :meth:`close` with
+        same argument values.
+
+        :param exc_type:
+            The type of exception object or ``None`` if no exception was
+            raised.
+
+        :param exc:
+            The exception object or ``None`` if no exception was raised.
+
+        :param tb:
+            The traceback object or ``None`` if no exception was raised.
+        """
         ...
 
     def scoped(self, name: str) -> "InjectorLike":
@@ -187,11 +201,29 @@ class InjectorLike(SupportsInject, Protocol):
         """Check if this injector is closed."""
         ...
 
-    def close(self) -> None:
+    def close(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc: BaseException | None = None,
+        tb: TracebackType | None = None,
+        /,
+    ) -> None:
         """Close this injector.
 
-        Calling this method disposes all resources and closes all scoped
-        injectors that were created by this injector.
+        It disposes all resources created by this injector and recursively
+        closes all owned scoped injectors, if any. When called from context
+        manager, or when manual ``try..except`` construct was used, it can also
+        receive exception information to be propagated to underlying resource
+        disposers.
+
+        :param exc_type:
+            The exception object type or ``None`` if no exception was raised.
+
+        :param exc:
+            The exception object or ``None`` if no exception was raised.
+
+        :param tb:
+            The traceback object or ``None`` if no exception was raised.
         """
         ...
 
@@ -206,13 +238,27 @@ class AsyncInjectorLike(SupportsAsyncInject, Protocol):
     """
 
     async def __aenter__(self) -> "AsyncInjectorLike":
-        """Enter context manager for this injector."""
+        """Enter async context manager for this injector."""
         ...
 
     async def __aexit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: TracebackType | None
     ) -> None:
-        """Exit context manager created for this injector."""
+        """Exit async context manager created for this injector.
+
+        Exiting context manager is equivalent to calling :meth:`close` with
+        same argument values.
+
+        :param exc_type:
+            The type of exception object or ``None`` if no exception was
+            raised.
+
+        :param exc:
+            The exception object or ``None`` if no exception was raised.
+
+        :param tb:
+            The traceback object or ``None`` if no exception was raised.
+        """
         ...
 
     def scoped(self, name: str) -> "AsyncInjectorLike":
@@ -238,11 +284,29 @@ class AsyncInjectorLike(SupportsAsyncInject, Protocol):
         """
         ...
 
-    async def close(self) -> None:
-        """Dispose all managed resources and close the injector.
+    async def close(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc: BaseException | None = None,
+        tb: TracebackType | None = None,
+        /,
+    ) -> None:
+        """Close this injector.
 
-        If this injector has scoped injectors associated, then those are closed
-        as well recursively.
+        It disposes all resources created by this injector and recursively
+        closes all owned scoped injectors, if any. When called from context
+        manager, or when manual ``try..except`` construct was used, it can also
+        receive exception information to be propagated to underlying resource
+        disposers.
+
+        :param exc_type:
+            The exception object type or ``None`` if no exception was raised.
+
+        :param exc:
+            The exception object or ``None`` if no exception was raised.
+
+        :param tb:
+            The traceback object or ``None`` if no exception was raised.
         """
         ...
 
