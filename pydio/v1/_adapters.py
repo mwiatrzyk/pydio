@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import collections.abc
 import functools
 import inspect
-from typing import Any, AsyncGenerator, Callable, Generator
+from typing import (
+    Any,
+    AsyncGenerator,
+    Awaitable,
+    Callable,
+    Generator,
+)
 
 from pydio.v1.exc import FactoryDeclarationError, IncompatibleInjectorUsedError
 from pydio.v1.interface import supports_async_inject, supports_inject
@@ -84,12 +91,11 @@ def adapt_func_for_manual_mode(
     if inspect.isasyncgenfunction(func):
 
         @functools.wraps(func)
-        async def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T, None]:
+        def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T]:
             kw = make_kwargs(injector)
             if "injector" in kw and supports_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
-            async for obj in func(**kw):
-                yield obj
+            return _AsyncGeneratorProxy(func(**kw))
 
         return wrapped_async_gen
 
@@ -111,22 +117,20 @@ def adapt_func_for_manual_mode(
             kw = make_kwargs(injector)
             if "injector" in kw and supports_async_inject(injector):
                 raise IncompatibleInjectorUsedError(func, injector)
-            yield from func(**kw)
+            return _GeneratorProxy(func(**kw))
 
         return wrapped_generator
 
-    if inspect.isfunction(func):
+    assert inspect.isfunction(func)  # Just to satisfy type checker
 
-        @functools.wraps(func)
-        def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> T:
-            kw = make_kwargs(injector)
-            if "injector" in kw and supports_async_inject(injector):
-                raise IncompatibleInjectorUsedError(func, injector)
-            return func(**kw)
+    @functools.wraps(func)
+    def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> T:
+        kw = make_kwargs(injector)
+        if "injector" in kw and supports_async_inject(injector):
+            raise IncompatibleInjectorUsedError(func, injector)
+        return func(**kw)
 
-        return wrapped_func
-
-    raise _make_unsupported_factory_function_type_error(func)
+    return wrapped_func
 
 
 def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult[T]]) -> AnyFuncType[T]:
@@ -167,10 +171,12 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
     if inspect.isasyncgenfunction(func):
 
         @functools.wraps(func)
-        async def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T, None]:
-            kw = await async_resolve_deps(injector)
-            async for obj in func(**kw):
-                yield obj
+        def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T, None]:
+            async def make_generator():
+                kw = await async_resolve_deps(injector)
+                return func(**kw)
+
+            return _AsyncGeneratorAutoProxy(make_generator)
 
         return wrapped_async_gen
 
@@ -188,25 +194,57 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
         @functools.wraps(func)
         def wrapped_gen(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
             kw = resolve_deps(injector)
-            yield from func(**kw)
+            return _GeneratorProxy(func(**kw))
 
         return wrapped_gen
 
-    if inspect.isfunction(func):
+    assert inspect.isfunction(func)
 
-        @functools.wraps(func)
-        def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
-            kw = resolve_deps(injector)
-            return func(**kw)
+    @functools.wraps(func)
+    def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
+        kw = resolve_deps(injector)
+        return func(**kw)
 
-        return wrapped_func
-
-    raise _make_unsupported_factory_function_type_error(func)
+    return wrapped_func
 
 
-def _make_unsupported_factory_function_type_error(func: Any):
-    return TypeError(
-        f"Got an unsupported object of type {type(func)!r} as 'func'; "
-        "allowed types are: async generator functions, async functions, "
-        "generator functions and callables"
-    )
+class _AsyncGeneratorProxy(collections.abc.AsyncGenerator[T]):
+    def __init__(self, target: AsyncGenerator[T]) -> None:
+        self.__target = target
+
+    async def asend(self, value: None) -> T:
+        return await self.__target.asend(value)
+
+    async def athrow(self, typ, val=None, tb=None, /) -> T:
+        return await self.__target.athrow(typ, val, tb)
+
+
+class _AsyncGeneratorAutoProxy(collections.abc.AsyncGenerator[T]):
+    def __init__(self, factory: Callable[[], Awaitable[AsyncGenerator[T]]]) -> None:
+        self.__factory = factory
+        self.__target: AsyncGenerator[T] | None = None
+
+    async def __require_target(self) -> AsyncGenerator[T]:
+        # FIXME: Is there a better way of achieving this?
+        if self.__target is None:
+            self.__target = await self.__factory()
+        return self.__target
+
+    async def asend(self, value: None) -> T:
+        target = await self.__require_target()
+        return await target.asend(value)
+
+    async def athrow(self, typ, val=None, tb=None, /) -> T:
+        target = await self.__require_target()
+        return await target.athrow(typ, val, tb)
+
+
+class _GeneratorProxy(collections.abc.Generator[T]):
+    def __init__(self, target: Generator[T]) -> None:
+        self.__target = target
+
+    def send(self, value: None) -> T:
+        return self.__target.send(value)
+
+    def throw(self, typ, val=None, tb=None) -> T:
+        return self.__target.throw(typ, val, tb)

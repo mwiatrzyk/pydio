@@ -37,8 +37,9 @@ class ResourceDisposerStub:
 
 
 class AsyncResourceDisposerStub:
-    def __init__(self, dispose_mock) -> None:
+    def __init__(self, dispose_mock, async_mock_used: bool = False) -> None:
         self.__dispose_mock = dispose_mock
+        self.__async_mock_used = async_mock_used
 
     async def dispose(
         self,
@@ -46,5 +47,7 @@ class AsyncResourceDisposerStub:
         exc: BaseException | None = None,
         tb: TracebackType | None = None,
     ) -> None:
-        self.__dispose_mock(exc_type, exc, tb)
+        result = self.__dispose_mock(exc_type, exc, tb)
+        if self.__async_mock_used:
+            await result
         return None

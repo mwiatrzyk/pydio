@@ -24,7 +24,7 @@ from typing_extensions import TypeIs
 from pydio.v1 import _export_list, _utils
 
 __all__ = export = _export_list.ExportList(
-    ["FuncResult", "AsyncFuncResult", "FuncType", "AsyncFuncType", "AnyFuncType", "ScopeType", "EnvType"]
+    ["FuncResult", "AsyncFuncResult", "FuncType", "AsyncFuncType", "AnyInjector", "AnyFuncType", "ScopeType", "EnvType"]
 )  # type: ignore
 
 _unset = object()
@@ -33,26 +33,30 @@ T = TypeVar("T")
 
 T_co = TypeVar("T_co", covariant=True)
 
-#: Type alias for :obj:`FuncType` result.
+#: Type alias representing possible return value type of the user-defined
+#: synchronous factory function.
 FuncResult = Union[T, Generator[T, None, None]]
 
-#: Type alias for :obj:`AsyncFuncType` result.
+#: Type alias representing possible return value type of the user-defined async
+#: factory function.
 AsyncFuncResult = Union[Awaitable[T], AsyncGenerator[T, None]]
 
-#: Type alias for supported user-defined callables.
+#: Type alias representing supported user-defined synchronous callables.
 FuncType = Callable[[Union["SupportsInject", "SupportsAsyncInject"]], FuncResult[T]]
 
-#: Type alias for supported user-defined async callables.
+#: Type alias representing supported user-defined async callables.
 AsyncFuncType = Callable[["SupportsAsyncInject"], AsyncFuncResult[T]]
 
-#: Union of :obj:`FuncType` and :obj:`AsyncFuncType`.
-# AnyFuncType = Union[FuncType[T], AsyncFuncType[T]]
-AnyFuncType = Callable[[Union["SupportsInject", "SupportsAsyncInject"]], Union[FuncResult[T], AsyncFuncResult[T]]]
+#: Type alias representing any injector.
+AnyInjector = Union["SupportsInject", "SupportsAsyncInject"]
 
-#: Type alias for scope type.
+#: Type alias representing all supported user-defined factory functions.
+AnyFuncType = Callable[[AnyInjector], Union[FuncResult[T], AsyncFuncResult[T]]]
+
+#: Type representing scope.
 ScopeType = tuple[str, ...]
 
-#: Type alias for environment type.
+#: Type representing environment.
 EnvType = Union[str, None]
 
 

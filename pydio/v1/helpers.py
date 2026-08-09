@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import inspect
-from typing import Callable, Hashable, Literal, Any, cast
+from typing import AsyncGenerator, Awaitable, Callable, Generator, Hashable, Literal, Any, cast
 
 
 from . import _export_list, _utils, _factories, _adapters
 from .interface import (
     T,
-    AnyFuncType,
+    AnyInjector,
     AsyncFuncResult,
     EnvType,
     FuncResult,
@@ -18,6 +18,11 @@ from .interface import (
 )
 
 __all__ = export = _export_list.ExportList()  # type: ignore
+
+#: Type defining mode literals.
+#:
+#: Used by :func:`register_func` and :func:`provides` helpers.
+Mode = Literal["auto", "manual", "passthrough"]
 
 
 @export
@@ -69,10 +74,11 @@ async def async_inject_annotated(injector: SupportsAsyncInject, typ: type[T], *m
 def register_func(
     provider: SupportsRegisterFactory,
     typ: type[T] | Any,
-    func: AnyFuncType[T],
+    func: Callable[..., FuncResult[T] | AsyncFuncResult[T]],
     *,
     scope: ScopeType = ScopeType(),
     env: EnvType = None,
+    mode: Mode = "manual",
 ) -> None:
     """Register user-defined function as a resource factory inside given
     provider.
@@ -82,41 +88,143 @@ def register_func(
     :class:`pydio.v1.interface.AsyncResourceFactoryLike`-capable object, which
     is then registered inside given provider.
 
+    :param provider:
+        The provider to register in.
+
     :param typ:
-        The type or special form (e.g. :obj:`typing.Annotated`) to register
+        The type or a special form (e.g. :obj:`typing.Annotated`) to register
         factory for.
 
     :param func:
-        The function to register as a factory for *typ*.
+        The function to register as a factory for the given *typ*.
 
-        Following functions are supported:
-        - normal functions,
+        Following types are supported:
+        - functions,
         - generator functions,
         - async functions,
         - async generator functions.
 
     :param scope:
-        The scope to register *func* in.
+        The scope to register factory in.
 
-        There must not be any other factory registered for *typ* under the
-        same scope and environment.
+        Scopes are organized into trees and are tightly correlated with scoped
+        injectors (see :meth:`pydio.v1.interface.InjectorLike.scoped` or
+        :meth:`pydio.v1.interface.AsyncInjectorLike.scoped`) and are basically
+        used to define allowed lifetime of a resource. PyDIO does not use
+        neither singletons, nor global state, and the only mechanism to limit
+        lifetime of a resource is scoping.
+
+        Imagine you have three things:
+        - configuration that never changes
+        - database connection that is kept alive
+        - database session that must be committed/rolled back when client
+          request ends
+
+        All af these can easily be modelled in PyDIO using scopes:
+        - you can use root scope ``()`` for configuration data (the default)
+        - you can use e.g. ``('app',)`` scope for database connection
+        - and you can use e.g. ``('app', 'request')`` scope for a single
+          application request
+
+        .. important::
+            There must not be any other factory registered for *typ* under the
+            same scope and environment.
 
     :param env:
-        The environment to register *func* for.
+        The environment to register factory for.
 
-        There must not be any other factory registered for *typ* under the
-        same scope and environment.
+        Environments allow to pick a different implementation of the same
+        interface depending on things like whether or not we are dealing with
+        production environment, or a testing one. For instance, in-memory
+        SQLite database can be used when testing, while a normal PostgreSQL
+        will be used when in production.
+
+        .. important::
+            There must not be any other factory registered for *typ* under the
+            same scope and environment.
+
+    :param mode:
+        Configures how dependencies (if any) of the registered resource factory
+        are going to be resolved.
+
+        Following values are available:
+
+        ``manual``
+
+            Allows to decide which arguments from the list below are going to
+            be used by the factory function:
+            - *injector* - to pass injector
+            - *typ* - to pass registered type
+            - *scope* - to pass registered scope
+            - *env* - to pass registered environment
+            The user can pick any subset from the list above, including empty
+            set (no arguments).
+
+            Type hints are optional in this mode (names are important), and
+            injections of dependent types (if needed) must be done manually via
+            *injector* parameter.
+
+            This is the default mode and it basically mimics behavior of a pre
+            1.x PyDIO releases.
+
+        ``auto``
+
+            Allows to define a custom set of arguments and their types and
+            forces PyDIO to automatically resolve those dependencies (using
+            type hints as injection arguments) before the factory function is
+            called. When factory function is finally called, it receives
+            injected objects in place of each of declared argument.
+
+            This mode also allows declaring factory functions without arguments
+            (meaning: no dependencies), but it DOES NOT allow skipping
+            annotations, as those are required to resolve dependencies.
+
+            .. important::
+                When this mode is used you cannot access injector or factory
+                metadata (type, scope and environment) directly like you would
+                for the ``manual`` mode.
+
+        ``passthrough``
+
+            Pass injector as is, requiring factory function to accept exactly
+            one positional argument, which is the injector object implementing
+            either :class:`pydio.v1.interface.SupportsInject` or
+            :class:`pydio.v1.interface.SupportsAsyncInject` protocols.
+
+            This is the fastest possible way to call the factory as no runtime
+            checks are made. It is recommended to use this mode instead of
+            ``manual`` if injections are made manually and just the injector is
+            used by the factory function.
+
+            .. important::
+                There are no sync vs async runtime checks when this mode is
+                used.
     """
+    if not callable(func):
+        raise TypeError(f"Cannot use non-callable object {func!r} as a resource factory")
     unpacked_func = _utils.unpack_partial(func)
+    if mode == "manual":
+        adapted_func = _adapters.adapt_func_for_manual_mode(unpacked_func, typ, scope=scope, env=env)
+    elif mode == "auto":
+        adapted_func = _adapters.adapt_func_for_auto_mode(unpacked_func)
+    else:
+        adapted_func = unpacked_func
     if inspect.isasyncgenfunction(unpacked_func):
-        return provider.register_factory(typ, _factories.AsyncGeneratorFactory(unpacked_func), scope=scope, env=env)
+        adapted_func = cast(Callable[[SupportsAsyncInject], AsyncGenerator[T, None]], adapted_func)
+        return provider.register_factory(
+            typ,
+            _factories.AsyncGeneratorFactory(adapted_func),
+            scope=scope,
+            env=env,
+        )
     if inspect.iscoroutinefunction(unpacked_func):
-        return provider.register_factory(typ, _factories.AsyncFunctionFactory(unpacked_func), scope=scope, env=env)
+        adapted_func = cast(Callable[[SupportsAsyncInject], Awaitable[T]], adapted_func)
+        return provider.register_factory(typ, _factories.AsyncFunctionFactory(adapted_func), scope=scope, env=env)
     if inspect.isgeneratorfunction(unpacked_func):
-        return provider.register_factory(typ, _factories.GeneratorFactory(unpacked_func), scope=scope, env=env)
-    if callable(unpacked_func):
-        return provider.register_factory(typ, _factories.FunctionFactory(unpacked_func), scope=scope, env=env)
-    raise TypeError(f"Cannot use non-callable {type(func).__qualname__!r} type as resource factory")
+        adapted_func = cast(Callable[[AnyInjector], Generator[T, None, None]], adapted_func)
+        return provider.register_factory(typ, _factories.GeneratorFactory(adapted_func), scope=scope, env=env)
+    adapted_func = cast(Callable[[AnyInjector], T], adapted_func)
+    return provider.register_factory(typ, _factories.FunctionFactory(adapted_func), scope=scope, env=env)
 
 
 @export
@@ -135,6 +243,9 @@ def register_constant(
     :class:`pydio.v1.interface.ResourceFactoryLike` protocol but is
     optimized for plain objects.
 
+    :param provider:
+        The provider to register in.
+
     :param typ:
         The type of the instance to register.
 
@@ -146,21 +257,14 @@ def register_constant(
 
             provider.register_instance(Annotated[int, "https.defaultPort"], 443)
 
-    :param scope:
-        The scope to register instance in.
+    :param value:
+        The constant value to associate with given *typ*.
 
-        There must not be any other factory or instance registered for
-        *typ* under the same scope and environment.
+    :param scope:
+        See *scope* parameter of the :func:`register_func` function.
 
     :param env:
-        The environment to register instance for.
-
-        For example, testing environment may use different constants that
-        the production one and this is the place that allows to have
-        several different values registered for one type.
-
-        There must not be any other factory or instance registered for
-        *typ* under the same scope and environment.
+        See *env* parameter of the :func:`register_func` function.
     """
     return provider.register_factory(typ, _factories.ConstantFactory(value), scope=scope, env=env)
 
@@ -172,62 +276,15 @@ def provides(
     *,
     scope: ScopeType = ScopeType(),
     env: EnvType = None,
-    mode: Literal["manual", "passthrough", "auto"] = "manual",
+    mode: Mode = "manual",
 ):
     """Decorates provided user function as a resource factory.
 
-    :param provider:
-        The provider to use.
-
-    :param typ:
-        The type to register factory for.
-
-    :param scope:
-        The scope to register factory in.
-
-    :param env:
-        The environment to register factory for.
-
-    :param mode:
-        Configures how to pass injector to the decorated factory.
-
-        Following values are available:
-
-        - *manual* - allow to manually define what arguments the function will
-          receive when called. The function will accept any combination
-          (including empty) of the arguments from the following list:
-          - *injector* - to pass injector
-          - *typ* - to pass registered type
-          - *scope* - to pass registered scope
-          - *env* - to pass registered environment
-
-        - *passthrough* - pass injector as is, require factory function to
-          accept exactly one positional argument. This is the fastest possible
-          way to call the factory as no runtime decisions are made.
-
-          .. important::
-                There are no sync vs async runtime checks when this mode is
-                used.
-
-        - *auto* - expect any arguments to be defined and require all to have
-          annotations set. These annotations are then used to inject needed
-          objects and call the function accordingly. This mode allows to inject
-          based on annotations without touching injector directly.
+    This is a decorator version of the :func:`register_func` helper.
     """
 
     def decorator(func: Callable[..., FuncResult[T] | AsyncFuncResult[T]]):
-        if mode == "manual":
-            register_func(
-                provider,
-                typ,
-                _adapters.adapt_func_for_manual_mode(func, typ, scope=scope, env=env),
-                scope=scope,
-                env=env,
-            )
-        elif mode == "auto":
-            register_func(provider, typ, _adapters.adapt_func_for_auto_mode(func), scope=scope, env=env)
-        else:
-            register_func(provider, typ, func, scope=scope, env=env)
+        register_func(provider, typ, func, scope=scope, env=env, mode=mode)
         return func
 
     return decorator

@@ -17,7 +17,7 @@ class AsyncioBackend:
         return self._RLock()
 
     class _RLock:
-        def __init__(self):
+        def __init__(self) -> None:
             self.__waiters = collections.deque[asyncio.Event]()
             self.__count = 0
             self.__owner: asyncio.Task | None = None

@@ -67,7 +67,7 @@ class GeneratorFactory:
     This is similar to pytest's fixtures.
     """
 
-    def __init__(self, target: Callable[[SupportsInject | SupportsAsyncInject], Any]):
+    def __init__(self, target: Callable[[SupportsInject | SupportsAsyncInject], Generator[Any]]):
         self.__target = target
 
     def create(self, injector: SupportsInject | SupportsAsyncInject) -> tuple[Any, ResourceDisposerLike]:
@@ -76,7 +76,7 @@ class GeneratorFactory:
         return obj, self._Disposer(gen)
 
     class _Disposer:
-        def __init__(self, gen: Generator[Any, None, None]) -> None:
+        def __init__(self, gen: Generator[Any]) -> None:
             self.__gen = gen
 
         def dispose(
@@ -91,7 +91,7 @@ class GeneratorFactory:
                 next(self.__gen)
                 raise TypeError(f"Generator {self.__gen!r} must only yield once")
             except StopIteration:
-                self.__gen.close()
+                pass
 
 
 class AsyncFunctionFactory:
@@ -118,7 +118,7 @@ class AsyncFunctionFactory:
 class AsyncGeneratorFactory:
     """Similar to :class:`GeneratorFactory`, but for async generators."""
 
-    def __init__(self, target: Callable[[SupportsAsyncInject], AsyncGenerator[Any, None]]):
+    def __init__(self, target: Callable[[SupportsAsyncInject], AsyncGenerator[Any]]):
         self.__target = target
 
     async def create(self, injector: SupportsAsyncInject) -> tuple[Any, AsyncResourceDisposerLike]:
@@ -127,7 +127,7 @@ class AsyncGeneratorFactory:
         return obj, self._Disposer(gen)
 
     class _Disposer:
-        def __init__(self, gen: AsyncGenerator[Any, None]):
+        def __init__(self, gen: AsyncGenerator[Any]):
             self.__gen = gen
 
         async def dispose(
@@ -142,4 +142,4 @@ class AsyncGeneratorFactory:
                 await self.__gen.__anext__()
                 raise TypeError(f"Async generator {self.__gen!r} must only yield once")
             except StopAsyncIteration:
-                await self.__gen.aclose()
+                pass

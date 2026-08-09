@@ -1,10 +1,14 @@
+import threading
+import asyncio
+import time
+import random
 from types import TracebackType
 
 import pytest
 
-from mockify.api import Mock, Return, satisfied, Any, Type
+from mockify.api import Mock, Return, Invoke, InvokeAsync, satisfied, ordered, Any, Type
 
-from pydio.v1.exc import IncompatibleFactoryProvidedError, InjectorClosedError, DuplicateScopeError
+from pydio.v1.exc import IncompatibleFactoryProvidedError, InjectorAlreadyClosedError, ScopeAlreadyExistsError
 from pydio.v1.injectors import Injector, AsyncInjector
 from pydio.v1.interface import InjectorLike, AsyncInjectorLike
 
@@ -126,7 +130,7 @@ class TestInjector:
 
     async def test_creating_two_scoped_injectors_with_same_scope_is_forbidden(self, uut: InjectorLike, scope):
         uut.scoped("foo")
-        with pytest.raises(DuplicateScopeError) as excinfo:
+        with pytest.raises(ScopeAlreadyExistsError) as excinfo:
             uut.scoped("foo")
         assert excinfo.value.scope == (*scope, "foo")
 
@@ -209,7 +213,7 @@ class TestInjector:
     def test_operating_on_a_closed_injector_is_forbidden(self, uut: InjectorLike, op):
         uut.close()
         assert uut.is_closed()
-        with pytest.raises(InjectorClosedError):
+        with pytest.raises(InjectorAlreadyClosedError):
             op(uut)
 
     def test_disposer_is_called_with_exc_info_if_error_happens_inside_context_manager(
@@ -226,6 +230,61 @@ class TestInjector:
                 generic_mock.create_int.expect_call(uut).will_once(Return((123, generic_mock.dispose_int)))
                 uut.inject(int)
                 raise exc
+
+    def test_close_closes_resources_in_reverse_order(self, uut: InjectorLike, provider_mock, generic_mock, scope, env):
+        provider_mock.require_factory.expect_call(str, scope=scope, env=env).will_once(
+            Return(ResourceFactoryStub(generic_mock.create_str))
+        )
+        generic_mock.create_str.expect_call(uut).will_once(
+            Return(("spam", ResourceDisposerStub(generic_mock.dispose_str)))
+        )
+        provider_mock.require_factory.expect_call(int, scope=scope, env=env).will_once(
+            Return(ResourceFactoryStub(generic_mock.create_int))
+        )
+        generic_mock.create_int.expect_call(uut).will_once(
+            Return((123, ResourceDisposerStub(generic_mock.dispose_int)))
+        )
+        generic_mock.dispose_int.expect_call(None, None, None)
+        generic_mock.dispose_str.expect_call(None, None, None)
+        with ordered(generic_mock):
+            assert uut.inject(str) == "spam"
+            assert uut.inject(int) == 123
+            uut.close()
+
+    def test_when_closing_from_multiple_threads_then_dispose_is_called_only_once_for_each_resource(
+        self, provider_mock, generic_mock
+    ):
+
+        def dispose_int(*args, **kwargs):
+            time.sleep(random.random() * 0.025)
+
+        def perform_closing():
+            nonlocal successful_close_count
+            try:
+                uut.close()
+                successful_close_count += 1
+            except Exception:
+                pass
+
+        uut = Injector(provider_mock)
+        num_threads = 100
+        threads: list[threading.Thread] = []
+        provider_mock.require_factory.expect_call(int, scope=(), env=None).will_once(
+            Return(ResourceFactoryStub(generic_mock.create_int))
+        )
+        generic_mock.create_int.expect_call(uut).will_once(
+            Return((123, ResourceDisposerStub(generic_mock.dispose_int)))
+        )
+        generic_mock.dispose_int.expect_call(None, None, None).will_once(Invoke(dispose_int))
+        assert uut.inject(int) == 123
+        successful_close_count = 0
+        for _ in range(num_threads):
+            threads.append(threading.Thread(target=perform_closing))
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
+        assert successful_close_count == num_threads
 
 
 class TestAsyncInjector:
@@ -386,7 +445,7 @@ class TestAsyncInjector:
 
     async def test_creating_two_scoped_injectors_with_same_scope_is_forbidden(self, uut: AsyncInjectorLike, scope):
         uut.scoped("foo")
-        with pytest.raises(DuplicateScopeError) as excinfo:
+        with pytest.raises(ScopeAlreadyExistsError) as excinfo:
             uut.scoped("foo")
         assert excinfo.value.scope == (*scope, "foo")
 
@@ -478,14 +537,14 @@ class TestAsyncInjector:
     async def test_scoped_cannot_be_called_on_closed_injector(self, uut: AsyncInjectorLike):
         await uut.close()
         assert uut.is_closed()
-        with pytest.raises(InjectorClosedError) as excinfo:
+        with pytest.raises(InjectorAlreadyClosedError) as excinfo:
             uut.scoped("foo")
         assert excinfo.value.injector is uut
 
     async def test_inject_cannot_be_called_on_closed_injector(self, uut: AsyncInjectorLike):
         await uut.close()
         assert uut.is_closed()
-        with pytest.raises(InjectorClosedError) as excinfo:
+        with pytest.raises(InjectorAlreadyClosedError) as excinfo:
             await uut.inject(int)
         assert excinfo.value.injector is uut
 
@@ -505,3 +564,58 @@ class TestAsyncInjector:
                 )
                 await uut.inject(int)
                 raise exc
+
+    async def test_close_closes_resources_in_reverse_order(
+        self, uut: AsyncInjectorLike, provider_mock, generic_mock, scope, env
+    ):
+        provider_mock.require_factory.expect_call(str, scope=scope, env=env).will_once(
+            Return(AsyncResourceFactoryStub(generic_mock.create_str))
+        )
+        generic_mock.create_str.expect_call(uut).will_once(
+            Return(("spam", AsyncResourceDisposerStub(generic_mock.dispose_str)))
+        )
+        provider_mock.require_factory.expect_call(int, scope=scope, env=env).will_once(
+            Return(AsyncResourceFactoryStub(generic_mock.create_int))
+        )
+        generic_mock.create_int.expect_call(uut).will_once(
+            Return((123, AsyncResourceDisposerStub(generic_mock.dispose_int)))
+        )
+        generic_mock.dispose_int.expect_call(None, None, None)
+        generic_mock.dispose_str.expect_call(None, None, None)
+        with ordered(generic_mock):
+            assert (await uut.inject(str)) == "spam"
+            assert (await uut.inject(int)) == 123
+            await uut.close()
+
+    async def test_when_closing_from_multiple_tasks_then_dispose_is_called_only_once_for_each_resource(
+        self, provider_mock, generic_mock
+    ):
+
+        async def dispose_int(*args, **kwargs):
+            await asyncio.sleep(random.random() * 0.025)
+
+        async def perform_closing():
+            nonlocal successful_close_count
+            try:
+                await uut.close()
+                successful_close_count += 1
+            except Exception:
+                pass
+
+        uut = AsyncInjector(provider_mock)
+        num_tasks = 100
+        tasks: list[asyncio.Task] = []
+        provider_mock.require_factory.expect_call(int, scope=(), env=None).will_once(
+            Return(AsyncResourceFactoryStub(generic_mock.create_int))
+        )
+        generic_mock.create_int.expect_call(uut).will_once(
+            Return((123, AsyncResourceDisposerStub(generic_mock.dispose_int, async_mock_used=True)))
+        )
+        generic_mock.dispose_int.expect_call(None, None, None).will_once(InvokeAsync(dispose_int))
+        assert (await uut.inject(int)) == 123
+        successful_close_count = 0
+        for _ in range(num_tasks):
+            tasks.append(asyncio.create_task(perform_closing()))
+        for task in tasks:
+            await task
+        assert successful_close_count == num_tasks

@@ -1,7 +1,12 @@
+from __future__ import annotations
+
+import collections.abc
 import functools
 import inspect
 import textwrap
-from typing import Annotated, Any, Callable, Hashable, TypeVar, get_type_hints
+from typing import Annotated, Any, AsyncGenerator, Callable, Generator, Hashable, TypeVar, get_type_hints
+
+from typing_extensions import TypeIs
 
 _unset = object()
 
@@ -28,10 +33,16 @@ def get_func_signature(func: Callable) -> inspect.Signature:
 
 
 def format_detailed_error(
-    out: list[str], data: dict, *, indent_char: str = "", indent_level: int = 0, width: int = 120
+    out: list[str],
+    data: dict,
+    *,
+    indent_char: str = "",
+    indent_level: int = 0,
+    width: int = 120,
+    exclude_none: bool = True,
 ) -> None:
     for k, v in data.items():
-        if v is None:
+        if exclude_none and v is None:
             continue
         label_indent = indent_char * indent_level
         out.append(f"{label_indent}{k}:")
@@ -81,6 +92,30 @@ def has_coroutine_method(obj: Any, name: str) -> bool:
     if unbound_method is _unset:
         return False
     return inspect.iscoroutinefunction(unbound_method)
+
+
+def is_async_generator(obj: object, typ: type[T] | None = None) -> TypeIs[AsyncGenerator[T]]:
+    """Check if given object is an async generator object.
+
+    :param obj:
+        The object to check.
+
+    :param typ:
+        The optional type to refine returned check.
+    """
+    return isinstance(obj, collections.abc.AsyncGenerator)
+
+
+def is_generator(obj: object, typ: type[T] | None = None) -> TypeIs[Generator[T]]:
+    """Check if given object is a generator object.
+
+    :param obj:
+        The object to check.
+
+    :param typ:
+        The optional type to refine returned check.
+    """
+    return isinstance(obj, collections.abc.Generator)
 
 
 @functools.lru_cache(128)

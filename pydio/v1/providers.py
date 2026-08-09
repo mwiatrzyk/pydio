@@ -79,9 +79,11 @@ class Provider:
             for nested_provider in self.__nested_providers:
                 try:
                     return nested_provider.require_factory(typ, scope=scope, env=env)
+                except OutOfScopeError:
+                    raise  # Let it propagate if found, but out of scope
                 except FactoryLookupError:
                     pass
-            raise FactoryNotFoundError(typ, env)
+            raise FactoryNotFoundError(typ, scope, env)
         last_scopes = current_scopes = scopes
         for name in scope:
             current_scopes = current_scopes.get(name, {})
@@ -92,7 +94,7 @@ class Provider:
         if factory is None:
             existing_scopes: list[ScopeType] = []
             self.__collect_existing_scopes(existing_scopes, scopes, ScopeType())
-            raise OutOfScopeError(typ, env, scope, tuple(existing_scopes))
+            raise OutOfScopeError(tuple(existing_scopes), typ=typ, scope=scope, env=env)
         return factory
 
     def __collect_existing_scopes(self, out: list[ScopeType], visited: dict, current: ScopeType) -> None:
