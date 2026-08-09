@@ -7,7 +7,6 @@ from pydio.v1.async_backends.asyncio import AsyncioBackend
 
 
 class TestAsyncioBackend:
-
     @pytest.fixture
     def uut(self):
         return AsyncioBackend()

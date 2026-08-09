@@ -84,21 +84,27 @@ def provider():
     return provider
 
 
-@pytest.mark.parametrize("typ", [
-    ConfigAutoSync,
-    ConfigManualSync,
-    ConfigPassthroughSync,
-])
+@pytest.mark.parametrize(
+    "typ",
+    [
+        ConfigAutoSync,
+        ConfigManualSync,
+        ConfigPassthroughSync,
+    ],
+)
 def test_inject_with_dependency_resolving(provider: ProviderLike, typ):
     injector = Injector(provider)
     assert injector.inject(typ) == Config("root", "127.0.0.1", 8080)
 
 
-@pytest.mark.parametrize("typ", [
-    ConfigAutoAsync,
-    ConfigManualAsync,
-    ConfigPassthroughAsync,
-])
+@pytest.mark.parametrize(
+    "typ",
+    [
+        ConfigAutoAsync,
+        ConfigManualAsync,
+        ConfigPassthroughAsync,
+    ],
+)
 async def test_async_inject_with_dependency_resolving(provider: ProviderLike, typ):
     injector = AsyncInjector(provider)
     assert (await injector.inject(typ)) == Config("root", "127.0.0.1", 8080)

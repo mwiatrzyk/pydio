@@ -1,9 +1,11 @@
 import functools
 import inspect
 import textwrap
-from typing import Any, Callable, get_type_hints
+from typing import Annotated, Any, Callable, Hashable, TypeVar, get_type_hints
 
 _unset = object()
+
+T = TypeVar("T")
 
 
 def unpack_partial(obj: Any) -> Any:
@@ -79,3 +81,13 @@ def has_coroutine_method(obj: Any, name: str) -> bool:
     if unbound_method is _unset:
         return False
     return inspect.iscoroutinefunction(unbound_method)
+
+
+@functools.lru_cache(128)
+def build_annotated(typ: Hashable, *metadata: Hashable) -> Any:
+    """Helper for building :obj:`typing.Annotated` special forms in the
+    runtime.
+
+    It uses LRU caching, keeping most recent 128 types in cache.
+    """
+    return Annotated.__class_getitem__((typ, *metadata))  # type: ignore

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Annotated, Callable, Literal, cast
+from typing import Callable, Hashable, Literal, Any, cast
 
 
 from . import _export_list, _utils, _factories, _adapters
@@ -12,6 +12,7 @@ from .interface import (
     EnvType,
     FuncResult,
     ScopeType,
+    SupportsAsyncInject,
     SupportsInject,
     SupportsRegisterFactory,
 )
@@ -20,51 +21,48 @@ __all__ = export = _export_list.ExportList()  # type: ignore
 
 
 @export
-def inject_type(injector: SupportsInject, typ: type[T]) -> T:
-    """Helper for injecting objects of given type.
+def inject_annotated(injector: SupportsInject, typ: type[T], *metadata: Any) -> T:
+    """Helper that builds and injects annotated type preserving the original
+    type on return value.
 
-    It is a tiny wrapper over :meth:`SupportsInject.inject` method that casts
-    returned any object into instance of *typ*.
+    Since PyDIO works using type-to-factory maps it is not possible to use two
+    different factories per single type. To work around this limitation,
+    existing type can be wrapped with :obj:`typing.Annotated` special form and
+    have user-defined metadata attached.
 
-    .. note::
-        For performance reasons there are no runtime checks if returned object
-        is a real *typ* instance; the helper is just doing a cast using
-        :func:`typing.cast` function that basically just changes type hint for
-        return value.
+    For example:
+
+        from typing import Annotated
+
+        HostName = Annotated[str, "hostname"]
+        UserName = Annotated[str, "username"]
+
+    And now, if this helper is used, you don't loose the original type at the
+    cost of having to remember the wrapped type, and the metadata::
+
+        hostname = inject_annotated(injector, str, "hostname")
+        username = inject_annotated(injector, str, "username")
+        # both `hostname` and `username` are now interpreted as `str`
 
     :param injector:
         The injector to use.
 
     :param typ:
-        The type of instance to inject.
+        The expected return value type.
+
+    :param metadata:
+        The tuple with metadata set for a given *typ*.
     """
-    return cast(T, injector.inject(typ))
+    return injector.inject(_utils.build_annotated(cast(Hashable, typ), *metadata))
 
 
 @export
-def inject_annotated_type(injector: SupportsInject, typ: type[T], *args: Any) -> T:
-    """Helper for injecting values provided as ``Annotated[typ, *args]``.
+async def async_inject_annotated(injector: SupportsAsyncInject, typ: type[T], *metadata: Any) -> T:
+    """See as :func:`inject_annotated` docs.
 
-    It builds an :obj:`typing.Annotated` object using given *typ* and *args*
-    and then uses it as a key when calling :meth:`SupportsIndex.inject` method.
-    Finally, the call either ends with exception (if no matching provider was
-    found) or returns injected object casted as *typ*.
-
-    .. note::
-        For performance reasons there are no runtime checks if returned object
-        is a real *typ* instance; the helper is just doing a cast using
-        :func:`typing.cast` function that basically just changes type hint for
-        return value.
-
-    :param injector:
-        The injector to use.
-
-    :param key:
-        The type to inject.
+    This helper does the same, but is meant to be used with async injector.
     """
-    # TODO: Maybe there is a better way to construct Annotated?
-    key = Annotated.__class_getitem__((typ, *args))  # type: ignore
-    return cast(T, injector.inject(key))
+    return await injector.inject(_utils.build_annotated(cast(Hashable, typ), *metadata))
 
 
 @export
