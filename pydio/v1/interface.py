@@ -376,23 +376,81 @@ class ProviderLike(SupportsRegisterFactory, SupportsRequireFactory, Protocol):
     """
 
 
-class AsyncLockLike(Protocol):
-    """Interface for async locks."""
+class AsyncRLockLike(Protocol):
+    """Interface for async recursive locks.
 
-    async def __aenter__(self) -> None: ...
+    This locking primitive allows the lock to be re-acquired by its owner with
+    just internal recursion counter to be increased, and released when it
+    reaches down to 0.
+    """
 
-    async def __aexit__(self, exc_type, exc, tb): ...
+    async def __aenter__(self) -> None:
+        """Enter context manager and acquire the lock."""
+        ...
+
+    async def __aexit__(self, exc_type, exc, tb):
+        """Exit context manager and release the lock."""
+        ...
+
+    async def acquire(self) -> None:
+        """Acquire the lock.
+
+        Following rules apply:
+        - if the lock has no owner, then current task acquires it and becomes
+          its owner,
+        - if the lock is owned by the current task, then it re-acquires it
+          without waiting,
+        - if the lock is owned by another task, then the current one awaits for
+          being notified when the lock gets unlocked.
+
+        Acquiring a lock should be fair, i.e. access should be granted in
+        ``acquire()`` call order.
+        """
+        ...
+
+    def release(self) -> None:
+        """Release the lock.
+
+        This method must be called on exit from a critical section and as many
+        times as the :meth:`acquire` was called. When the topmost ``acquire()``
+        was released, then it removes the current owner and signals to other
+        task (if any) that it can now acquire the lock.
+
+        Only previously acquired lock can be released and only by the current
+        owner, or otherwise :exc:`RuntimeError` is raised.
+        """
+        ...
+
+    def is_locked(self) -> bool:
+        """Check if this lock is locked.
+
+        If not locked, then any task can acquire it without blocking. If
+        locked, then :meth:`is_owned` can be used to check if it is the current
+        task who owns the lock.
+        """
+        ...
+
+    def is_owned(self) -> bool:
+        """Check if this lock is owned by the current async task.
+
+        This can be used to check if :meth:`acquire` would block or not.
+        """
+        ...
 
 
 @export
 class AsyncBackendLike(Protocol):
-    """Protocol defining async backend interface required by PyDIO."""
+    """Protocol defining async backend interface required by PyDIO.
 
-    def create_lock(self) -> AsyncLockLike:
-        """Create async lock.
+    This allows PyDIO to work with any async library for as long as this
+    interface is implemented for it. Built-in implementations are defined in
+    :mod:`pydio.v1.async_backends` module.
+    """
 
-        Used to guard resource from simultaneous access from two different
-        coroutines.
+    def create_rlock(self) -> AsyncRLockLike:
+        """Create an async recursive lock.
+
+        See :class:`AsyncRLockLike` for more details.
         """
         ...
 
@@ -416,7 +474,7 @@ def is_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[Resource
 
 
 @export
-def is_async_resource_factory(obj: Any, typ: type[T] | None = None) -> TypeIs[AsyncResourceFactoryLike[T]]:
+def is_async_resource_factory(obj: Any, typ: type[T] | Any | None = None) -> TypeIs[AsyncResourceFactoryLike[T]]:
     """Check if given object implements :class:`AsyncResourceFactoryLike`
     protocol.
 

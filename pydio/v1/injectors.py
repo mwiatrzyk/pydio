@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import threading
 from types import TracebackType
 from typing import Any
@@ -72,6 +73,9 @@ class Injector:
         if cached is not None:
             return cached[0]
         with self.__lock:
+            cached = self.__cache.get(typ)
+            if cached is not None:
+                return cached[0]
             factory = self.__provider.require_factory(typ, scope=self.__scope, env=self.__env)
             if is_async_resource_factory(factory, typ):
                 raise IncompatibleFactoryProvidedError(self, factory)
@@ -112,7 +116,7 @@ class AsyncInjector:
         self.__async_backend: AsyncBackendLike = async_backend or AsyncioBackend()
         self.__cache: dict[Any, tuple[Any, ResourceDisposerLike | AsyncResourceDisposerLike]] = {}
         self.__scoped: dict[str, "AsyncInjector"] = {}
-        self.__lock = self.__async_backend.create_lock()
+        self.__lock = self.__async_backend.create_rlock()
         self.__closed = False
 
     async def __aenter__(self) -> "AsyncInjectorLike":
@@ -148,6 +152,9 @@ class AsyncInjector:
         if cached is not None:
             return cached[0]
         async with self.__lock:
+            cached = self.__cache.get(typ)
+            if cached is not None:
+                return cached[0]
             found_factory = self.__provider.require_factory(typ, scope=self.__scope, env=self.__env)
             if is_async_resource_factory(found_factory, typ):
                 obj, async_disposer = await found_factory.create(self)
