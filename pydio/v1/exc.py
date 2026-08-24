@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import traceback
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 from pydio.v1 import _export_list, _utils
 from pydio.v1.interface import (
@@ -26,7 +26,8 @@ class PyDIOError(Exception):
 
 @export
 class FactoryDeclarationError(PyDIOError):
-    """Raised when user-defined factory function is incorrectly declared."""
+    """Raised when resource factory function that was tried to be registered is
+    incorrectly declared."""
 
     #: The user-defined factory with incorrect declaration.
     func: Callable
@@ -171,6 +172,9 @@ class FactoryLookupError(PyDIOError):
         self.scope = scope
         self.env = env
 
+    def format_params(self) -> str:
+        return f"typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
+
 
 @export
 class FactoryNotFoundError(FactoryLookupError):
@@ -183,21 +187,21 @@ class FactoryNotFoundError(FactoryLookupError):
     """
 
     def __str__(self) -> str:
-        return f"No factory found for query: typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
+        return f"No factory found for query: {self.format_params()}"
 
 
 @export
 class OutOfScopeError(FactoryLookupError):
-    """Raised when factory for a given type and environment exists, but under
-    unrelated scope.
+    """Raised when factory for a given type and environment exists, but is
+    tried to be reached from an unrelated scope.
 
     Please refer to the :ref:`using-scopes` to read more about scoping.
     """
 
-    #: The existing scopes where factory was found.
-    existing_scopes: tuple[ScopeType, ...]
+    #: The list of existing scopes found during lookup.
+    existing_scopes: Sequence[ScopeType]
 
-    def __init__(self, existing_scopes: tuple[ScopeType, ...], **kwargs):
+    def __init__(self, existing_scopes: Sequence[ScopeType], **kwargs):
         super().__init__(**kwargs)
         self.existing_scopes = existing_scopes
 

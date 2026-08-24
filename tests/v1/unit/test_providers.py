@@ -56,10 +56,10 @@ class TestProvider:
             register_func(uut, int, lambda: i, scope=registered_scope, env=env)
         with pytest.raises(OutOfScopeError) as excinfo:
             uut.require_factory(int, scope=required_scope, env=env)
-        registered_scopes_str = ", ".join(repr(x) for x in registered_scopes)
-        assert str(excinfo.value) == (
-            f"None of the existing scopes {{{registered_scopes_str}}} could match the current scope {required_scope!r} for query: typ={int!r}, scope={required_scope!r}, env={env!r}"
-        )
+        assert excinfo.value.typ == int
+        assert excinfo.value.scope == required_scope
+        assert excinfo.value.env == env
+        assert excinfo.value.existing_scopes == registered_scopes
 
     def test_require_factory_fails_if_type_is_located_under_different_env_and_also_default_env_is_missing(
         self, uut: UUT
@@ -67,7 +67,9 @@ class TestProvider:
         register_constant(uut, int, 123, env="production")
         with pytest.raises(FactoryNotFoundError) as excinfo:
             uut.require_factory(int, env="testing")
-        assert str(excinfo.value) == f"No factory found for query: typ={int!r}, scope=(), env='testing'"
+        assert excinfo.value.typ == int
+        assert excinfo.value.scope == ()
+        assert excinfo.value.env == "testing"
 
     def test_require_factory_falls_back_to_default_env(self, uut: UUT, injector_stub):
         register_constant(uut, int, 123)
@@ -143,3 +145,13 @@ class TestProvider:
         register_func(uut, int, lambda: 456)
         with pytest.raises(FactoryNotFoundError):
             uut.require_factory(float)
+
+    def test_when_nested_raises_out_of_scope_then_it_propagates(self, uut: UUT, env):
+        child = Provider()
+        register_func(child, int, lambda: 123, scope=("bar",), env=env)
+        uut.attach(child)
+        with pytest.raises(OutOfScopeError) as excinfo:
+            uut.require_factory(int, scope=("foo",), env=env)
+        assert excinfo.value.typ == int
+        assert excinfo.value.scope == ("foo",)
+        assert excinfo.value.env == env
