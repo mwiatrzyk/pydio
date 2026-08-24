@@ -56,7 +56,7 @@ class TestProvider:
             register_func(uut, int, lambda: i, scope=registered_scope, env=env)
         with pytest.raises(OutOfScopeError) as excinfo:
             uut.require_factory(int, scope=required_scope, env=env)
-        assert excinfo.value.typ == int
+        assert excinfo.value.typ is int
         assert excinfo.value.scope == required_scope
         assert excinfo.value.env == env
         assert excinfo.value.existing_scopes == registered_scopes
@@ -67,7 +67,7 @@ class TestProvider:
         register_constant(uut, int, 123, env="production")
         with pytest.raises(FactoryNotFoundError) as excinfo:
             uut.require_factory(int, env="testing")
-        assert excinfo.value.typ == int
+        assert excinfo.value.typ is int
         assert excinfo.value.scope == ()
         assert excinfo.value.env == "testing"
 
@@ -152,6 +152,6 @@ class TestProvider:
         uut.attach(child)
         with pytest.raises(OutOfScopeError) as excinfo:
             uut.require_factory(int, scope=("foo",), env=env)
-        assert excinfo.value.typ == int
+        assert excinfo.value.typ is int
         assert excinfo.value.scope == ("foo",)
         assert excinfo.value.env == env

@@ -1,5 +1,11 @@
+import os
+import pathlib
+import shutil
+
 from invoke.tasks import task
 from invoke.context import Context
+
+ROOT_DIR = pathlib.Path(__file__).parent.absolute()
 
 
 @task(help={"fix": "Fix formatting if needed."})
@@ -91,3 +97,54 @@ def clean(ctx: Context):
     ctx.run('find . -name "*.pyc" -delete')
     ctx.run('find . -type d -name "__pycache__" -empty -delete')
     ctx.run("git clean -xdf --exclude .venv")
+
+
+@task(help={"force": "Replace existing docs with newly generated ones."})
+def gen_api_docs(ctx: Context, force: bool = False):
+    """Rebuild API docs sources."""
+
+    def write_module(relpath: pathlib.Path, file_without_ext: str):
+        module_name = f"{relpath}.{file_without_ext}".replace(os.path.sep, ".")
+        rows = [f"**{module_name}**"]
+        rows.append("=" * len(rows[0]))
+        rows.extend(
+            [f".. automodule:: {module_name}", "    :members:", "    :no-index:" if file_without_ext == "api" else ""]
+        )
+        fullpath = target_dir / relpath / f"{file_without_ext}.rst"
+        fullpath.parent.mkdir(parents=True, exist_ok=True)
+        fullpath.write_text("\n".join(x for x in rows if x))
+
+    def write_index(entries: list[str]):
+        rows = ["API Reference"]
+        rows.extend(["=" * len(rows[0]), ".. toctree::", "    :maxdepth: 1", ""])
+        for entry in sorted(entries):
+            rows.append(f"    {entry}")
+        fullpath = target_dir / "index.rst"
+        fullpath.write_text("\n".join(rows))
+
+    cwd = pathlib.Path().cwd()
+    if cwd != ROOT_DIR:
+        raise RuntimeError(f"This command must be called from a PyDIO repository root directory: {ROOT_DIR}")
+    source_dir = cwd / "pydio"
+    target_dir = cwd / "docs" / "source" / "api"
+    if target_dir.exists():
+        if not force:
+            raise RuntimeError(
+                f"The target directory already exists: {target_dir}. Try running again with --force option enabled to override."
+            )
+        shutil.rmtree(target_dir)
+    index_entries = []
+    for path, dirs, files in os.walk(source_dir):
+        relpath = pathlib.Path(path).relative_to(source_dir.parent)
+        names = str(relpath).split(os.path.sep)
+        is_public = all(not x.startswith("_") for x in names)
+        if not is_public:
+            continue
+        for dir in filter(lambda x: not x.startswith("_"), dirs):
+            index_entries.append(str(relpath / dir))
+            write_module(relpath, dir)
+        for file in filter(lambda x: not x.startswith("_") and x.endswith(".py"), files):
+            file_without_ext = file[: file.rfind(".py")]
+            index_entries.append(str(relpath / file_without_ext))
+            write_module(relpath, file_without_ext)
+    write_index(index_entries)

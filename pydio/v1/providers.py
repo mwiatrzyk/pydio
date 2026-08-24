@@ -9,7 +9,6 @@ from pydio.v1.exc import (
     FactoryNotFoundError,
     FactoryAlreadyExistsError,
     OutOfScopeError,
-    FactoryLookupError,
 )
 from pydio.v1.interface import (
     AsyncResourceFactoryLike,

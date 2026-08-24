@@ -7,8 +7,8 @@ from pydio.v1.interface import AsyncRLockLike
 
 
 class AsyncioBackend:
-    """Implementation of the :class:`pydio.v1.Interface.AsyncBackendLike`
-    protocol for the **asyncio** library from Python's standard library.
+    """Implementation of the :class:`pydio.v1.interface.AsyncBackendLike`
+    protocol for the :mod:`asyncio` library from Python's standard library.
 
     This backend is used as a default when async injector is used.
     """

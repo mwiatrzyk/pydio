@@ -1,0 +1,4 @@
+**pydio.v1**
+============
+.. automodule:: pydio.v1
+    :members:
