@@ -9,8 +9,8 @@ from typing import Any
 from pydio.v1 import _export_list
 from pydio.v1.async_backends.asyncio import AsyncioBackend
 from pydio.v1.exc import (
-    ScopeAlreadyExistsError,
-    IncompatibleFactoryProvidedError,
+    ScopedInjectorAlreadyExistsError,
+    IncompatibleResourceFactoryFoundError,
     InjectorAlreadyClosedError,
     IncompleteClosingError,
 )
@@ -102,12 +102,7 @@ class Injector:
         self.__require_not_closed()
         with self.__lock:
             if name in self.__scoped:
-                raise ScopeAlreadyExistsError(
-                    (
-                        *self.__scope,
-                        name,
-                    )
-                )
+                raise ScopedInjectorAlreadyExistsError(self, self.__scope, name)
             injector = self.__class__(self.__provider, scope=(*self.__scope, name), env=self.__env)
             self.__scoped[name] = injector
             return injector
@@ -128,7 +123,14 @@ class Injector:
                 return cached[0]
             factory = self.__provider.require_factory(typ, scope=self.__scope, env=self.__env)
             if is_async_resource_factory(factory, typ):
-                raise IncompatibleFactoryProvidedError(self, factory)
+                raise IncompatibleResourceFactoryFoundError(
+                    typ,
+                    self.__scope,
+                    self.__env,
+                    self,
+                    factory,
+                    "Async resource factory cannot be used by a non-async injector",
+                )
             obj, disposer = factory.create(self)
             self.__cache[typ] = (obj, disposer)
             return obj
@@ -156,7 +158,7 @@ class Injector:
                 scoped_injector.close(exc_type, exc, tb)
             self.__closed = True
             if dispose_errors:
-                raise IncompleteClosingError(dispose_errors)
+                raise IncompleteClosingError(self, dispose_errors)
 
 
 @export
@@ -233,12 +235,7 @@ class AsyncInjector:
         """See :meth:`pydio.v1.interface.AsyncInjectorLike.scoped`."""
         self.__require_not_closed()
         if name in self.__scoped:
-            raise ScopeAlreadyExistsError(
-                (
-                    *self.__scope,
-                    name,
-                )
-            )
+            raise ScopedInjectorAlreadyExistsError(self, self.__scope, name)
         child = self.__class__(
             self.__provider, scope=(*self.__scope, name), env=self.__env, async_backend=self.__async_backend
         )
@@ -294,4 +291,4 @@ class AsyncInjector:
                 await scoped_injector.close(exc_type, exc, tb)
             self.__closed = True
             if dispose_errors:
-                raise IncompleteClosingError(dispose_errors)
+                raise IncompleteClosingError(self, dispose_errors)

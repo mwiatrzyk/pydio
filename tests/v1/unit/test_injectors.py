@@ -8,7 +8,11 @@ import pytest
 
 from mockify.api import Mock, Return, Invoke, InvokeAsync, satisfied, ordered, Any, Type
 
-from pydio.v1.exc import IncompatibleFactoryProvidedError, InjectorAlreadyClosedError, ScopeAlreadyExistsError
+from pydio.v1.exc import (
+    IncompatibleResourceFactoryFoundError,
+    InjectorAlreadyClosedError,
+    ScopedInjectorAlreadyExistsError,
+)
 from pydio.v1.injectors import Injector, AsyncInjector
 from pydio.v1.interface import InjectorLike, AsyncInjectorLike
 
@@ -107,7 +111,7 @@ class TestInjector:
     ):
         factory = AsyncResourceFactoryStub(generic_mock.create_int)
         provider_mock.require_factory.expect_call(int, scope=scope, env=env).will_once(Return(factory))
-        with pytest.raises(IncompatibleFactoryProvidedError) as excinfo:
+        with pytest.raises(IncompatibleResourceFactoryFoundError) as excinfo:
             uut.inject(int)
         assert excinfo.value.injector is uut
         assert excinfo.value.factory is factory
@@ -130,9 +134,11 @@ class TestInjector:
 
     async def test_creating_two_scoped_injectors_with_same_scope_is_forbidden(self, uut: InjectorLike, scope):
         uut.scoped("foo")
-        with pytest.raises(ScopeAlreadyExistsError) as excinfo:
+        with pytest.raises(ScopedInjectorAlreadyExistsError) as excinfo:
             uut.scoped("foo")
-        assert excinfo.value.scope == (*scope, "foo")
+        assert excinfo.value.injector is uut
+        assert excinfo.value.injector_scope == scope
+        assert excinfo.value.scoped_name == "foo"
 
     def test_when_double_scoped_injector_ends_it_disposes_only_its_resources(self, provider_mock, generic_mock):
         uut = Injector(provider_mock)
@@ -445,9 +451,11 @@ class TestAsyncInjector:
 
     async def test_creating_two_scoped_injectors_with_same_scope_is_forbidden(self, uut: AsyncInjectorLike, scope):
         uut.scoped("foo")
-        with pytest.raises(ScopeAlreadyExistsError) as excinfo:
+        with pytest.raises(ScopedInjectorAlreadyExistsError) as excinfo:
             uut.scoped("foo")
-        assert excinfo.value.scope == (*scope, "foo")
+        assert excinfo.value.injector is uut
+        assert excinfo.value.injector_scope == scope
+        assert excinfo.value.scoped_name == "foo"
 
     async def test_when_double_scoped_injector_ends_it_disposes_only_its_resources(self, provider_mock, generic_mock):
         uut = AsyncInjector(provider_mock)

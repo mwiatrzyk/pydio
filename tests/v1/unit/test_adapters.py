@@ -6,7 +6,7 @@ import pytest
 from mockify.api import Return
 
 from pydio.v1 import _utils
-from pydio.v1.exc import FactoryDeclarationError, IncompatibleInjectorUsedError
+from pydio.v1.exc import UserFactoryDeclarationError, UserFactoryPreconditionError
 from pydio.v1.interface import SupportsAsyncInject, SupportsInject
 from pydio.v1._adapters import adapt_func_for_manual_mode, adapt_func_for_auto_mode
 
@@ -18,17 +18,18 @@ class TestManualModeAdapters:
 
     def test_adapting_fails_if_incorrect_arguments_are_used_in_function_declaration(self):
 
-        def make_object(foo, bar, baz):
+        def make_object(injector, typ, foo, bar, baz):
             return 123
 
-        with pytest.raises(FactoryDeclarationError) as excinfo:
+        with pytest.raises(UserFactoryDeclarationError) as excinfo:
             adapt_func_for_manual_mode(make_object, int)
-        assert excinfo.value.reason == (
-            "Parameters out of allowed set are found in function declaration; "
-            "extra found: ['bar', 'baz', 'foo'], "
-            "allowed set: ['env', 'injector', 'scope', 'typ']"
-        )
         assert excinfo.value.func is make_object
+        assert (
+            excinfo.value.reason
+            == "Excessive parameters found; only predefined parameter names can be used with `manual` mode."
+        )
+        assert excinfo.value.extra_info["allowed_params"] == {"injector", "typ", "env", "scope"}
+        assert excinfo.value.extra_info["excessive_params"] == {"foo", "bar", "baz"}
 
     async def test_calling_async_generator_factory_with_injector_param_raises_error_if_non_async_injector_is_passed(
         self, injector_stub
@@ -38,10 +39,15 @@ class TestManualModeAdapters:
             yield 123
 
         adapted = adapt_func_for_manual_mode(make_object, int)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             adapted(injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector == injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use async injector, or make factory non-async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsAsyncInject
 
     async def test_calling_async_function_factory_with_injector_param_raises_error_if_non_async_injector_is_passed(
         self, injector_stub
@@ -52,10 +58,15 @@ class TestManualModeAdapters:
 
         adapted = adapt_func_for_manual_mode(make_object, int)
         assert inspect.iscoroutinefunction(adapted)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             await adapted(injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector is injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use async injector, or make factory non-async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsAsyncInject
 
     def test_calling_non_async_generator_factory_with_injector_param_raises_error_if_async_injector_is_passed(
         self, async_injector_stub
@@ -65,10 +76,15 @@ class TestManualModeAdapters:
             yield 123
 
         adapted = adapt_func_for_manual_mode(make_object, int)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             adapted(async_injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector == async_injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use non-async injector, or make factory async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsAsyncInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsInject
 
     def test_calling_non_async_function_factory_with_injector_param_raises_error_if_async_injector_is_passed(
         self, async_injector_stub
@@ -79,10 +95,15 @@ class TestManualModeAdapters:
 
         adapted = adapt_func_for_manual_mode(make_object, int)
         assert inspect.isfunction(adapted)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             adapted(async_injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector is async_injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use non-async injector, or make factory async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsAsyncInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsInject
 
     class TestAsyncGeneratorFunction:
         async def test_adapt_with_no_args(self, async_injector_stub: SupportsAsyncInject, scope, env, generic_mock):
@@ -260,11 +281,17 @@ class TestAdaptFuncForAutoMode:
 
     def test_adapting_fails_if_target_function_has_annotations_missing(self):
 
-        def make_object(foo: int, bar: float, baz):
+        def make_object(foo: int, bar: float, baz, spam):
             return 123
 
-        with pytest.raises(FactoryDeclarationError):
+        with pytest.raises(UserFactoryDeclarationError) as excinfo:
             adapt_func_for_auto_mode(make_object)
+        assert excinfo.value.func is make_object
+        assert (
+            excinfo.value.reason
+            == "Parameters without annotations found; all parameters must have annotations set for `auto` mode."
+        )
+        assert excinfo.value.extra_info["unannotated_params"] == {"baz", "spam"}
 
     async def test_running_async_func_with_non_async_injector_causes_error(self, injector_stub: SupportsInject):
 
@@ -273,10 +300,15 @@ class TestAdaptFuncForAutoMode:
 
         adapted = adapt_func_for_auto_mode(make_object)
         assert inspect.iscoroutinefunction(adapted)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             await adapted(injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector is injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use async injector, or make factory non-async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsAsyncInject
 
     async def test_running_non_async_func_with_async_injector_causes_error(
         self, async_injector_stub: SupportsAsyncInject
@@ -287,10 +319,15 @@ class TestAdaptFuncForAutoMode:
 
         adapted = adapt_func_for_auto_mode(make_object)
         assert inspect.isfunction(adapted)
-        with pytest.raises(IncompatibleInjectorUsedError) as excinfo:
+        with pytest.raises(UserFactoryPreconditionError) as excinfo:
             adapted(async_injector_stub)
         assert excinfo.value.func is make_object
         assert excinfo.value.injector is async_injector_stub
+        assert (
+            excinfo.value.reason == "Incompatible injector used; please use non-async injector, or make factory async"
+        )
+        assert excinfo.value.extra_info["injector_given_implements"] is SupportsAsyncInject
+        assert excinfo.value.extra_info["injector_required_implements"] is SupportsInject
 
     class TestAsyncGeneratorFunction:
         async def test_adapt_with_no_args(self, async_injector_stub: SupportsAsyncInject, generic_mock):

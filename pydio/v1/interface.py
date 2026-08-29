@@ -219,6 +219,8 @@ class InjectorLike(SupportsInject, Protocol):
         receive exception information to be propagated to underlying resource
         disposers.
 
+        This method is idempotent.
+
         :param exc_type:
             The exception object type or ``None`` if no exception was raised.
 
@@ -277,14 +279,7 @@ class AsyncInjectorLike(SupportsAsyncInject, Protocol):
         ...
 
     def is_closed(self) -> bool:
-        """Check if this injector is closed.
-
-        This method will return ``True`` when either of these two events
-        happened:
-
-        - :meth:`close` was called,
-        - context manager created for this injector ended.
-        """
+        """Check if this injector is closed."""
         ...
 
     async def close(
@@ -301,6 +296,8 @@ class AsyncInjectorLike(SupportsAsyncInject, Protocol):
         manager, or when manual ``try..except`` construct was used, it can also
         receive exception information to be propagated to underlying resource
         disposers.
+
+        This method is idempotent.
 
         :param exc_type:
             The exception object type or ``None`` if no exception was raised.
@@ -380,6 +377,7 @@ class ProviderLike(SupportsRegisterFactory, SupportsRequireFactory, Protocol):
     """
 
 
+@export
 class AsyncRLockLike(Protocol):
     """Interface for async recursive locks.
 

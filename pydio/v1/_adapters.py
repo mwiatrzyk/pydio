@@ -11,7 +11,7 @@ from typing import (
     Generator,
 )
 
-from pydio.v1.exc import FactoryDeclarationError, IncompatibleInjectorUsedError
+from pydio.v1.exc import UserFactoryDeclarationError, UserFactoryPreconditionError
 from pydio.v1.interface import supports_async_inject, supports_inject
 
 from . import _utils
@@ -27,6 +27,28 @@ from .interface import (
 )
 
 _MANUAL_MODE_ALLOWED_PARAMS: set[str] = {"injector", "typ", "scope", "env"}
+
+
+def _make_async_injector_required_error(func: Callable, injector: SupportsInject) -> UserFactoryPreconditionError:
+    return UserFactoryPreconditionError(
+        func,
+        injector,
+        "Incompatible injector used; please use async injector, or make factory non-async",
+        injector_given_implements=SupportsInject,
+        injector_required_implements=SupportsAsyncInject,
+    )
+
+
+def _make_non_async_injector_required_error(
+    func: Callable, injector: SupportsAsyncInject
+) -> UserFactoryPreconditionError:
+    return UserFactoryPreconditionError(
+        func,
+        injector,
+        "Incompatible injector used; please use non-async injector, or make factory async",
+        injector_given_implements=SupportsAsyncInject,
+        injector_required_implements=SupportsInject,
+    )
 
 
 def adapt_func_for_manual_mode(
@@ -80,12 +102,13 @@ def adapt_func_for_manual_mode(
         return kw
 
     declared_params = _utils.get_func_signature(func).parameters
-    incorrect = set(declared_params) - _MANUAL_MODE_ALLOWED_PARAMS
-    if incorrect:
-        raise FactoryDeclarationError(
+    excessive_params = set(declared_params) - _MANUAL_MODE_ALLOWED_PARAMS
+    if excessive_params:
+        raise UserFactoryDeclarationError(
             func,
-            "Parameters out of allowed set are found in function declaration; "
-            f"extra found: {sorted(incorrect)}, allowed set: {sorted(_MANUAL_MODE_ALLOWED_PARAMS)}",
+            "Excessive parameters found; only predefined parameter names can be used with `manual` mode.",
+            allowed_params=_MANUAL_MODE_ALLOWED_PARAMS,
+            excessive_params=excessive_params,
         )
 
     if inspect.isasyncgenfunction(func):
@@ -94,7 +117,7 @@ def adapt_func_for_manual_mode(
         def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T]:
             kw = make_kwargs(injector)
             if "injector" in kw and supports_inject(injector):
-                raise IncompatibleInjectorUsedError(func, injector)
+                raise _make_async_injector_required_error(func, injector)
             return _AsyncGeneratorProxy(func(**kw))
 
         return wrapped_async_gen
@@ -105,7 +128,7 @@ def adapt_func_for_manual_mode(
         async def wrapped_coroutine(injector: SupportsInject | SupportsAsyncInject) -> T:
             kw = make_kwargs(injector)
             if "injector" in kw and supports_inject(injector):
-                raise IncompatibleInjectorUsedError(func, injector)
+                raise _make_async_injector_required_error(func, injector)
             return await func(**kw)
 
         return wrapped_coroutine
@@ -116,7 +139,7 @@ def adapt_func_for_manual_mode(
         def wrapped_generator(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
             kw = make_kwargs(injector)
             if "injector" in kw and supports_async_inject(injector):
-                raise IncompatibleInjectorUsedError(func, injector)
+                raise _make_non_async_injector_required_error(func, injector)
             return _GeneratorProxy(func(**kw))
 
         return wrapped_generator
@@ -127,7 +150,7 @@ def adapt_func_for_manual_mode(
     def wrapped_func(injector: SupportsInject | SupportsAsyncInject) -> T:
         kw = make_kwargs(injector)
         if "injector" in kw and supports_async_inject(injector):
-            raise IncompatibleInjectorUsedError(func, injector)
+            raise _make_non_async_injector_required_error(func, injector)
         return func(**kw)
 
     return wrapped_func
@@ -150,7 +173,7 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
     async def async_resolve_deps(injector: SupportsInject | SupportsAsyncInject) -> dict:
         kw = {}
         if declared_params and supports_inject(injector):
-            raise IncompatibleInjectorUsedError(func, injector)
+            raise _make_async_injector_required_error(func, injector)
         for name, param in declared_params.items():
             kw[name] = await injector.inject(param.annotation)
         return kw
@@ -158,15 +181,22 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
     def resolve_deps(injector: SupportsInject | SupportsAsyncInject) -> dict:
         kw = {}
         if declared_params and supports_async_inject(injector):
-            raise IncompatibleInjectorUsedError(func, injector)
+            raise _make_non_async_injector_required_error(func, injector)
         for name, param in declared_params.items():
             kw[name] = injector.inject(param.annotation)
         return kw
 
     declared_params = _utils.get_func_signature(func).parameters
+    unannotated_params: set[str] = set()
     for param in declared_params.values():
         if param.annotation is inspect.Parameter.empty:
-            raise FactoryDeclarationError(func, "Not all arguments have annotations set")
+            unannotated_params.add(param.name)
+    if unannotated_params:
+        raise UserFactoryDeclarationError(
+            func,
+            "Parameters without annotations found; all parameters must have annotations set for `auto` mode.",
+            unannotated_params=unannotated_params,
+        )
 
     if inspect.isasyncgenfunction(func):
 

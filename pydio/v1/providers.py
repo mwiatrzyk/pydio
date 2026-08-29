@@ -6,8 +6,8 @@ from typing import Any
 
 from pydio.v1 import _export_list
 from pydio.v1.exc import (
-    FactoryNotFoundError,
-    FactoryAlreadyExistsError,
+    ResourceFactoryNotFoundError,
+    ResourceFactoryAlreadyExistsError,
     OutOfScopeError,
 )
 from pydio.v1.interface import (
@@ -65,7 +65,7 @@ class Provider:
         for name in scope:
             scopes = scopes.setdefault(name, {})
         if _ROOT_SCOPE in scopes:
-            raise FactoryAlreadyExistsError(typ, scope, env)
+            raise ResourceFactoryAlreadyExistsError(typ, scope, env)
         scopes[_ROOT_SCOPE] = factory
 
     def require_factory(
@@ -81,11 +81,11 @@ class Provider:
                     return nested_provider.require_factory(typ, scope=scope, env=env)
                 except OutOfScopeError as e:
                     nested_existing_scopes.update(e.existing_scopes)
-                except FactoryNotFoundError:
+                except ResourceFactoryNotFoundError:
                     pass
             if nested_existing_scopes:
-                raise OutOfScopeError(sorted(nested_existing_scopes), typ=typ, scope=scope, env=env)
-            raise FactoryNotFoundError(typ, scope, env)
+                raise OutOfScopeError(typ, scope, env, nested_existing_scopes)
+            raise ResourceFactoryNotFoundError(typ, scope, env)
         last_scopes = current_scopes = scopes_found
         for name in scope:
             current_scopes = current_scopes.get(name, {})
@@ -94,14 +94,14 @@ class Provider:
             last_scopes = current_scopes
         factory = last_scopes.get(_ROOT_SCOPE)
         if factory is None:
-            existing_scopes: list[ScopeType] = []
+            existing_scopes: set[ScopeType] = set()
             self.__collect_existing_scopes(existing_scopes, scopes_found, ScopeType())
-            raise OutOfScopeError(existing_scopes, typ=typ, scope=scope, env=env)
+            raise OutOfScopeError(typ, scope, env, existing_scopes)
         return factory
 
-    def __collect_existing_scopes(self, out: list[ScopeType], visited: dict, current: ScopeType) -> None:
+    def __collect_existing_scopes(self, out: set[ScopeType], visited: dict, current: ScopeType) -> None:
         for k, v in visited.items():
             if k is _ROOT_SCOPE:
-                out.append(current)
+                out.add(current)
             else:
                 self.__collect_existing_scopes(out, v, current + (k,))

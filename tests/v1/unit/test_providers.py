@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pydio.v1.exc import FactoryAlreadyExistsError, FactoryNotFoundError, OutOfScopeError
+from pydio.v1.exc import ResourceFactoryAlreadyExistsError, ResourceFactoryNotFoundError, OutOfScopeError
 from pydio.v1.helpers import register_func, register_constant
 from pydio.v1.providers import Provider
 from pydio.v1.interface import is_resource_factory
@@ -21,7 +21,7 @@ class TestProvider:
             return 123
 
         register_func(uut, int, make_object, scope=scope, env=env)
-        with pytest.raises(FactoryAlreadyExistsError):
+        with pytest.raises(ResourceFactoryAlreadyExistsError):
             register_func(uut, int, make_object, scope=scope, env=env)
 
     def test_registering_an_unsupported_object_as_factory_causes_error(self, uut: UUT):
@@ -31,9 +31,11 @@ class TestProvider:
         assert str(excinfo.value) == f"Cannot use non-callable object {func!r} as a resource factory"
 
     def test_require_factory_fails_if_type_is_missing(self, uut: UUT, scope, env):
-        with pytest.raises(FactoryNotFoundError) as excinfo:
+        with pytest.raises(ResourceFactoryNotFoundError) as excinfo:
             uut.require_factory(int, scope=scope, env=env)
-        assert str(excinfo.value) == f"No factory found for query: typ={int!r}, scope={scope!r}, env={env!r}"
+        assert excinfo.value.typ is int
+        assert excinfo.value.scope == scope
+        assert excinfo.value.env == env
 
     @pytest.mark.parametrize(
         "registered_scopes, required_scope",
@@ -59,13 +61,13 @@ class TestProvider:
         assert excinfo.value.typ is int
         assert excinfo.value.scope == required_scope
         assert excinfo.value.env == env
-        assert excinfo.value.existing_scopes == registered_scopes
+        assert excinfo.value.existing_scopes == set(registered_scopes)
 
     def test_require_factory_fails_if_type_is_located_under_different_env_and_also_default_env_is_missing(
         self, uut: UUT
     ):
         register_constant(uut, int, 123, env="production")
-        with pytest.raises(FactoryNotFoundError) as excinfo:
+        with pytest.raises(ResourceFactoryNotFoundError) as excinfo:
             uut.require_factory(int, env="testing")
         assert excinfo.value.typ is int
         assert excinfo.value.scope == ()
@@ -143,7 +145,7 @@ class TestProvider:
         child.attach(grandchild)
         uut.attach(child)
         register_func(uut, int, lambda: 456)
-        with pytest.raises(FactoryNotFoundError):
+        with pytest.raises(ResourceFactoryNotFoundError):
             uut.require_factory(float)
 
     def test_when_nested_raises_out_of_scope_then_it_propagates(self, uut: UUT, env):

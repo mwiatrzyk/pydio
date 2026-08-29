@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import traceback
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Mapping, Set
 
 from pydio.v1 import _export_list, _utils
 from pydio.v1.interface import (
@@ -13,7 +12,6 @@ from pydio.v1.interface import (
     ScopeType,
     SupportsAsyncInject,
     SupportsInject,
-    supports_async_inject,
 )
 
 __all__ = export = _export_list.ExportList()  # type: ignore
@@ -25,137 +23,107 @@ class PyDIOError(Exception):
 
 
 @export
-class FactoryDeclarationError(PyDIOError):
-    """Raised when resource factory function that was tried to be registered is
-    incorrectly declared."""
+class UserFactoryError(PyDIOError):
+    """Base class for errors that may be raised if user-defined factory
+    functions are wrongly declared, or if their execution is not possible
+    without adjustments."""
 
-    #: The user-defined factory with incorrect declaration.
+    #: The user factory function.
     func: Callable
 
-    #: The reason text.
+    #: The text explaining why this exception was raised.
     reason: str
 
-    #: The hint text.
-    hint: str | None
+    #: Additional context information.
+    #:
+    #: Used to pass additional data to be displayed to the user when this
+    #: exception is raised.
+    #:
+    #: This will be empty dict if none was provided.
+    extra_info: dict
 
-    def __init__(self, func: Callable, reason: str, *, hint: str | None = None):
+    def __init__(self, func: Callable, reason: str, /, **extra_info: Any):
         super().__init__()
         self.func = func
         self.reason = reason
-        self.hint = hint
-
-    @property
-    def func_filename(self) -> str:
-        return self.func.__code__.co_filename
-
-    @property
-    def func_lineno(self) -> int:
-        return self.func.__code__.co_firstlineno
-
-    @property
-    def func_signature(self) -> str:
-        return str(_utils.get_func_signature(self.func))
-
-    def __str__(self) -> str:
-        rows = [f"For factory declared in file {self.func_filename}, line {self.func_lineno}:"]
-        data = {
-            "reason": self.reason,
-            "hint": self.hint,
-            "details": {
-                "func_signature": self.func_signature,
-                "func.__qualname__": self.func.__qualname__,
-                "func.__module__": self.func.__module__,
-            },
-        }
-        _utils.format_detailed_error(rows, data, indent_char="  ")
-        return "\n".join(rows)
+        self.extra_info = extra_info
 
 
 @export
-class IncompatibleInjectorUsedError(PyDIOError):
-    """Raised when async injector was tried to be used by a non-async factory,
-    or non-async injector was tried to be used by an async factory."""
+class UserFactoryDeclarationError(UserFactoryError):
+    """Raised when user-defined resource factory function that is tried to be
+    registered in PyDIO is found to have invalid declaration.
 
-    #: The factory function that was called.
-    func: Callable
-
-    #: The incompatible injector that was tried to be used.
-    injector: SupportsInject | SupportsAsyncInject
-
-    def __init__(self, func: Callable, injector: SupportsInject | SupportsAsyncInject):
-        super().__init__()
-        self.func = func
-        self.injector = injector
-
-    @property
-    def func_filename(self) -> str:
-        return self.func.__code__.co_filename
-
-    @property
-    def func_lineno(self) -> int:
-        return self.func.__code__.co_firstlineno
-
-    @property
-    def func_location(self) -> str:
-        return f"{self.func_filename}:{self.func_lineno}"
-
-    @property
-    def reason_text(self) -> str:
-        if supports_async_inject(self.injector):
-            return "Synchronous factory cannot use async injector"
-        return "Async factory cannot use synchronous injector"
-
-    @property
-    def hint_text(self) -> str:
-        if supports_async_inject(self.injector):
-            return "Declare factory as `async def` or switch to synchronous injector"
-        return "Drop `async` from factory declaration or switch to async injector"
-
-    def __str__(self) -> str:
-        rows = [self.reason_text]
-        data = {
-            "Hint": self.hint_text,
-            "Details": {
-                "Injector used": self.injector,
-                "Factory function": self.func,
-                "Factory function location": self.func_location,
-            },
-        }
-        _utils.format_detailed_error(rows, data, indent_char="  ")
-        return "\n".join(rows)
-
-
-@export
-class IncompatibleFactoryProvidedError(PyDIOError):
-    """Raised when factory found for a requested type cannot be used by current
-    injector.
-
-    For example, synchronous injectors cannot create resources using async
-    factories.
+    This usually means that factory needs adjustments to make it usable for the
+    current injection mode.
     """
 
-    #: The injector that was used
-    injector: SupportsInject | SupportsAsyncInject
-
-    #: The incompatible factory found.
-    factory: ResourceFactoryLike | AsyncResourceFactoryLike
-
-    def __init__(
-        self, injector: SupportsInject | SupportsAsyncInject, factory: ResourceFactoryLike | AsyncResourceFactoryLike
-    ):
-        super().__init__()
-        self.injector = injector
-        self.factory = factory
+    def __init__(self, func: Callable, reason: str, /, **extra_info: Any):
+        super().__init__(func, reason, **extra_info)
 
     def __str__(self) -> str:
-        return (
-            f"Injector {self.injector!r} found an incompatible resource factory {self.factory!r} that cannot be used."
-        )
+        rows = [
+            "Invalid declaration of resource factory "
+            f"{_utils.get_func_name(self.func)!r} located in "
+            f"{_utils.get_func_location(self.func)}:"
+        ]
+        data = {
+            "Reason": self.reason,
+            "Details": {
+                "Factory signature": _utils.get_func_signature(self.func),
+                "Extra information": self.extra_info,
+            },
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
 
 
 @export
-class FactoryLookupError(PyDIOError):
-    """Base class for factory lookup errors."""
+class UserFactoryPreconditionError(UserFactoryError):
+    """Error raised when resource factory precondition check failed.
+
+    This is always raised before even user-provided resource factory function
+    starts and is used to signal that the factory has unmet preconditions that
+    prevented it from being called. For example, an async factory requires
+    async injector to inject its dependencies, but a non-async one was found
+    instead.
+    """
+
+    #: The injector used.
+    injector: SupportsInject | SupportsAsyncInject
+
+    def __init__(
+        self,
+        func: Callable,
+        injector: SupportsInject | SupportsAsyncInject,
+        reason: str,
+        /,
+        **extra_info: Any,
+    ):
+        super().__init__(func, reason, **extra_info)
+        self.injector = injector
+
+    def __str__(self) -> str:
+        rows = [
+            "Precondition check failed for resource factory "
+            f"{_utils.get_func_name(self.func)!r} located in "
+            f"{_utils.get_func_location(self.func)}:"
+        ]
+        data = {
+            "Reason": self.reason,
+            "Details": {
+                "Factory signature": _utils.get_func_signature(self.func),
+                "Injector object used": self.injector,
+                "Extra information": self.extra_info,
+            },
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
+
+
+@export
+class ResourceFactoryLookupError(PyDIOError):
+    """Base class for resource factory lookup errors."""
 
     #: The type for which the factory was requested.
     typ: Any
@@ -172,68 +140,135 @@ class FactoryLookupError(PyDIOError):
         self.scope = scope
         self.env = env
 
-    def format_params(self) -> str:
+    def format_query(self) -> str:
         return f"typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
 
 
 @export
-class FactoryNotFoundError(FactoryLookupError):
-    """Raised when no factory matching given type and environment could be
-    found.
+class ResourceFactoryNotFoundError(ResourceFactoryLookupError):
+    """Raised when no resource factory matching given query was found.
 
-    This means that either the type is completely missing, or that existing
-    factories are set neither for the given exact environment, nor the default
-    one.
+    This is raised when trying to reach an unregistered factory for a given
+    type, or if existing factories are registered for a different environments
+    than the required one.
     """
 
     def __str__(self) -> str:
-        return f"No factory found for query: {self.format_params()}"
+        return f"No resource factory found for query: {self.format_query()}"
 
 
 @export
-class OutOfScopeError(FactoryLookupError):
+class OutOfScopeError(ResourceFactoryLookupError):
     """Raised when factory for a given type and environment exists, but is
     tried to be reached from an unrelated scope.
 
     Please refer to the :ref:`using-scopes` to read more about scoping.
     """
 
-    #: The list of existing scopes found during lookup.
-    existing_scopes: Sequence[ScopeType]
+    #: The set with existing scopes found during lookup.
+    existing_scopes: Set[ScopeType]
 
-    def __init__(self, existing_scopes: Sequence[ScopeType], **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, typ: Any, scope: ScopeType, env: EnvType, existing_scopes: Set[ScopeType]):
+        super().__init__(typ, scope, env)
         self.existing_scopes = existing_scopes
 
     def __str__(self) -> str:
-        existing_str = ", ".join(repr(x) for x in self.existing_scopes)
-        return (
-            f"None of the existing scopes {{{existing_str}}} "
-            f"could match the current scope {self.scope!r} for query: typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
-        )
+        rows = [f"No resource factory could be accessed from the current scope for query: {self.format_query()}"]
+        data = {
+            "Current scope": self.scope,
+            "Existing scopes": self.existing_scopes,
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
 
 
 @export
-class ScopeAlreadyExistsError(PyDIOError):
-    """Raised when trying to create a scoped injector for an already existing
-    scope.
+class IncompatibleResourceFactoryFoundError(ResourceFactoryLookupError):
+    """Raised when factory found for a requested type cannot be used by current
+    injector.
+
+    For example, synchronous injectors cannot create resources using async
+    factories.
+    """
+
+    #: The injector that was used
+    injector: SupportsInject | SupportsAsyncInject
+
+    #: The incompatible factory found.
+    factory: ResourceFactoryLike | AsyncResourceFactoryLike
+
+    #: The reason text.
+    reason: str
+
+    def __init__(
+        self,
+        typ: Any,
+        scope: ScopeType,
+        env: EnvType,
+        injector: SupportsInject | SupportsAsyncInject,
+        factory: ResourceFactoryLike | AsyncResourceFactoryLike,
+        reason: str,
+    ):
+        super().__init__(typ, scope, env)
+        self.injector = injector
+        self.factory = factory
+        self.reason = reason
+
+    def __str__(self) -> str:
+        rows = [f"Incompatible resource factory found for query: {self.format_query()}"]
+        data = {
+            "Reason": self.reason,
+            "Details": {
+                "Injector object": self.injector,
+                "Resource factory object": self.factory,
+            },
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
+
+
+@export
+class ScopedInjectorAlreadyExistsError(PyDIOError):
+    """Raised when trying to create a scoped injector with a name that is
+    already in use.
 
     Since scopes are used to manage resource lifetimes, PyDIO enforces that
     only one injector can manage single scope, refusing to create another one.
+
+    Please refer to :ref:`using-scopes` for more details of how to use scoping.
     """
 
-    #: The scope that was found existing.
-    scope: ScopeType
+    #: The injector that refused to create scoped injector.
+    injector: SupportsInject | SupportsAsyncInject
 
-    def __init__(self, scope: ScopeType):
+    #: The scope managed by :attr:`injector`.
+    injector_scope: ScopeType
+
+    #: The name of a scoped injector used.
+    scoped_name: str
+
+    def __init__(self, injector: SupportsInject | SupportsAsyncInject, injector_scope: ScopeType, scoped_name: str):
         super().__init__()
-        self.scope = scope
+        self.injector = injector
+        self.injector_scope = injector_scope
+        self.scoped_name = scoped_name
+
+    def __str__(self) -> str:
+        rows = [f"Scoped injector named {self.scoped_name!r} already exists"]
+        data = {
+            "Details": {
+                "Injector object": self.injector,
+                "Injector scope": self.injector_scope,
+            }
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ")
+        return "\n".join(rows)
 
 
 @export
-class FactoryAlreadyExistsError(PyDIOError):
-    """Raised when there is an existing factory found for given type, scope and
-    environment."""
+class ResourceFactoryAlreadyExistsError(PyDIOError):
+    """Raised when there is an existing resource factory found for given type,
+    scope and environment."""
 
     #: The type with an already existing factory.
     typ: Any
@@ -251,7 +286,7 @@ class FactoryAlreadyExistsError(PyDIOError):
         self.env = env
 
     def __str__(self):
-        return f"Factory already exists: typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
+        return f"Resource factory already exists for: typ={self.typ!r}, scope={self.scope!r}, env={self.env!r}"
 
 
 @export
@@ -267,7 +302,7 @@ class InjectorAlreadyClosedError(PyDIOError):
         self.injector = injector
 
     def __str__(self) -> str:
-        return f"Cannot execute operations on a closed injector {self.injector!r} object"
+        return f"Cannot perform requested operation; the injector {self.injector!r} is already closed"
 
 
 @export
@@ -278,20 +313,28 @@ class IncompleteClosingError(PyDIOError):
     This exception acts as exception group.
     """
 
-    #: A type-to-exception map containing all teardown-phase exceptions caught.
-    dispose_errors: Mapping[type | Any, BaseException]
+    #: The injector object that failed to close successfully.
+    injector: SupportsInject | SupportsAsyncInject
 
-    def __init__(self, dispose_errors: Mapping[type | Any, BaseException]):
+    #: A type-to-exception map containing all teardown-phase exceptions caught.
+    dispose_errors: Mapping[Any, Exception]
+
+    def __init__(self, injector: SupportsInject | SupportsAsyncInject, dispose_errors: Mapping[Any, Exception]):
         super().__init__()
+        self.injector = injector
         self.dispose_errors = dispose_errors
 
     def __str__(self) -> str:
-        out = [f"Found {len(self.dispose_errors)} teardown error(-s):"]
-        data = {}
-        for typ, exc in self.dispose_errors.items():
-            data[f"in factory for type {typ!r}"] = {
-                "Exception": str(exc),
-                "Traceback": traceback.format_tb(exc.__traceback__),
+        rows = [
+            f"Injector closing did not complete successfully with {len(self.dispose_errors)} resource disposal error(-s) found:"
+        ]
+        data = {
+            "Details": {
+                "Injector object": self.injector,
+                "Errors found (during disposal)": [
+                    {f"for type {typ!r}": exc} for typ, exc in self.dispose_errors.items()
+                ],
             }
-        _utils.format_detailed_error(out, data, indent_char="  ")
-        return "\n".join(out)  # TODO: Fix formatting.
+        }
+        _utils.format_detailed_error(rows, data, indent_char="  ", recurse_list=True)
+        return "\n".join(rows)
