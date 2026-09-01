@@ -8,18 +8,18 @@ commands:
       ver_minor:
         type: integer
     steps:
-      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      #- run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
       - restore_cache:
           name: restore dependency cache
           keys:
-            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
-      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
-      - run: poetry install -q
+            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
+      - run: uv python pin <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - run: uv sync
       - save_cache:
           name: save dependency cache
-          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
           paths:
-            - ~/.cache/pypoetry/
+            - .venv
   configure-git:
     steps:
       - run: git config user.name "CircleCI"
