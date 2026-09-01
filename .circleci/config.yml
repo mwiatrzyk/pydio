@@ -49,7 +49,7 @@ jobs:
       - install-deps:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
-      - run: poetry run pytest
+      - run: uv run inv check
   publish-coverage:
     docker:
       - image: cimg/python:3.9
