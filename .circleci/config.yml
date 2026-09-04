@@ -69,9 +69,8 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
-      - run: poetry run inv adjust
-      - run: poetry run cz bump || circleci-agent step halt
-      - run: poetry run inv qa
+      - run: uv tool install --python 3.9 bumpify
+      - run: bumpify bump
       - push-to-git
   deploy:
     docker:
@@ -125,8 +124,15 @@ workflows:
             - test-py314
           filters:
             branches:
-              only: master
+              only: development  #XXX: Change to `master` before merge
       - deploy:
+          requires:
+            - test-py39
+            - test-py310
+            - test-py311
+            - test-py312
+            - test-py313
+            - test-py314
           filters:
             branches:
               ignore: /.*/
