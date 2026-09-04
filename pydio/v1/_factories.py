@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Any, AsyncGenerator, Awaitable, Callable, Generator
 
+from pydio.v1 import _compat
 from pydio.v1.interface import AsyncResourceDisposerLike, ResourceDisposerLike, SupportsAsyncInject, SupportsInject
 
 
@@ -87,7 +88,7 @@ class GeneratorFactory:
         ):
             try:
                 if exc_type is not None:
-                    self.__gen.throw(exc_type, exc, tb)
+                    _compat.throw(self.__gen, exc_type, exc, tb)  # type: ignore
                 next(self.__gen)
                 raise TypeError(f"Generator {self.__gen!r} must only yield once")
             except StopIteration:
@@ -138,7 +139,7 @@ class AsyncGeneratorFactory:
         ):
             try:
                 if exc_type is not None:
-                    await self.__gen.athrow(exc_type, exc, tb)
+                    await _compat.athrow(self.__gen, exc_type, exc, tb)  # type: ignore
                 await self.__gen.__anext__()
                 raise TypeError(f"Async generator {self.__gen!r} must only yield once")
             except StopAsyncIteration:

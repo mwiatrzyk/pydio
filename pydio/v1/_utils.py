@@ -6,9 +6,11 @@ import inspect
 import io
 import textwrap
 import traceback
-from typing import Annotated, Any, AsyncGenerator, Callable, Generator, Hashable, TypeVar, get_type_hints
+from typing import Any, AsyncGenerator, Callable, Generator, Hashable, TypeVar, get_type_hints
 
 from typing_extensions import TypeIs
+
+from pydio.v1 import _compat
 
 _unset = object()
 
@@ -189,4 +191,4 @@ def build_annotated(typ: Hashable, *metadata: Hashable) -> Any:
 
     It uses LRU caching, keeping most recent 128 types in cache.
     """
-    return Annotated.__class_getitem__((typ, *metadata))  # type: ignore
+    return _compat.build_annotated(typ, *metadata)  # type: ignore

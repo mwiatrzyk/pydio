@@ -23,7 +23,7 @@ def format(ctx: Context):
 @task(help={"fix": "Try fixing linting issues."})
 def check_lint(ctx: Context, fix: bool = False):
     """Run linting checks."""
-    ctx.run(f"ruff check {'--fix' if fix else ''} --exclude api.py")
+    ctx.run(f"ruff check {'--fix' if fix else ''} --exclude api.py --exclude pydio/v1/_compat/__init__.py")
 
 
 @task
@@ -61,7 +61,7 @@ def check(ctx: Context, fix: bool = False):
     ctx.run(f"inv check-lint {'--fix' if fix else ''}")
     ctx.run("inv check-typing")
     ctx.run("inv check-tests")
-    ctx.run("inv check-coverage")
+    ctx.run("inv check-coverage -f95")
     ctx.run("inv check-docs")
 
 

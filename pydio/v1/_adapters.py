@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import collections.abc
 import functools
 import inspect
 from typing import (
     Any,
     AsyncGenerator,
-    Awaitable,
     Callable,
     Generator,
 )
 
+from pydio.v1 import _compat
 from pydio.v1.exc import UserFactoryDeclarationError, UserFactoryPreconditionError
 from pydio.v1.interface import supports_async_inject, supports_inject
 
@@ -115,10 +114,13 @@ def adapt_func_for_manual_mode(
 
         @functools.wraps(func)
         def wrapped_async_gen(injector: SupportsInject | SupportsAsyncInject) -> AsyncGenerator[T]:
+            async def make_generator():
+                return func(**kw)
+
             kw = make_kwargs(injector)
             if "injector" in kw and supports_inject(injector):
                 raise _make_async_injector_required_error(func, injector)
-            return _AsyncGeneratorProxy(func(**kw))
+            return _compat.AsyncGeneratorProxy(make_generator)  # type: ignore
 
         return wrapped_async_gen
 
@@ -140,7 +142,7 @@ def adapt_func_for_manual_mode(
             kw = make_kwargs(injector)
             if "injector" in kw and supports_async_inject(injector):
                 raise _make_non_async_injector_required_error(func, injector)
-            return _GeneratorProxy(func(**kw))
+            return _compat.GeneratorProxy(func(**kw))  # type: ignore
 
         return wrapped_generator
 
@@ -206,7 +208,7 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
                 kw = await async_resolve_deps(injector)
                 return func(**kw)
 
-            return _AsyncGeneratorAutoProxy(make_generator)
+            return _compat.AsyncGeneratorProxy(make_generator)  # type: ignore
 
         return wrapped_async_gen
 
@@ -224,7 +226,7 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
         @functools.wraps(func)
         def wrapped_gen(injector: SupportsInject | SupportsAsyncInject) -> Generator[T, None, None]:
             kw = resolve_deps(injector)
-            return _GeneratorProxy(func(**kw))
+            return _compat.GeneratorProxy(func(**kw))  # type: ignore
 
         return wrapped_gen
 
@@ -236,45 +238,3 @@ def adapt_func_for_auto_mode(func: Callable[..., FuncResult[T] | AsyncFuncResult
         return func(**kw)
 
     return wrapped_func
-
-
-class _AsyncGeneratorProxy(collections.abc.AsyncGenerator[T]):
-    def __init__(self, target: AsyncGenerator[T]) -> None:
-        self.__target = target
-
-    async def asend(self, value: None) -> T:
-        return await self.__target.asend(value)
-
-    async def athrow(self, typ, val=None, tb=None, /) -> T:
-        return await self.__target.athrow(typ, val, tb)
-
-
-class _AsyncGeneratorAutoProxy(collections.abc.AsyncGenerator[T]):
-    def __init__(self, factory: Callable[[], Awaitable[AsyncGenerator[T]]]) -> None:
-        self.__factory = factory
-        self.__target: AsyncGenerator[T] | None = None
-
-    async def __require_target(self) -> AsyncGenerator[T]:
-        # FIXME: Is there a better way of achieving this?
-        if self.__target is None:
-            self.__target = await self.__factory()
-        return self.__target
-
-    async def asend(self, value: None) -> T:
-        target = await self.__require_target()
-        return await target.asend(value)
-
-    async def athrow(self, typ, val=None, tb=None, /) -> T:
-        target = await self.__require_target()
-        return await target.athrow(typ, val, tb)
-
-
-class _GeneratorProxy(collections.abc.Generator[T]):
-    def __init__(self, target: Generator[T]) -> None:
-        self.__target = target
-
-    def send(self, value: None) -> T:
-        return self.__target.send(value)
-
-    def throw(self, typ, val=None, tb=None) -> T:
-        return self.__target.throw(typ, val, tb)
