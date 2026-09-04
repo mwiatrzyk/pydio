@@ -81,8 +81,8 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - run: uv build
-      - run: uv publish --dry-run
-      - run: uv publish
+      - run: uv publish --token $PYPI_TOKEN --dry-run
+      - run: uv publish --token $PYPI_TOKEN
 
 workflows:
   test:
@@ -126,6 +126,8 @@ workflows:
           filters:
             branches:
               only: development  #XXX: Change to `master` before merge
+            tags:
+              ignore: /.*/
       - deploy:
           requires:
             - test-py39
@@ -138,4 +140,4 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v\d+\.\d+\.\d+$/
+              only: /^v\d+\.\d+\.\d+.*$/
