@@ -43,8 +43,8 @@ def check_coverage(ctx: Context, fail_under: int = 98):
     """Run tests with coverage check."""
     ctx.run(
         f"pytest tests/ --cov=pydio --cov-branch --cov-fail-under={fail_under} "
-        "--cov-report=html:reports/coverage/html "
-        "--cov-report=xml:reports/coverage/coverage.xml"
+        "--cov-report=html:.reports/coverage/html "
+        "--cov-report=xml:.reports/coverage/coverage.xml"
     )
 
 
@@ -70,7 +70,7 @@ def serve_coverage(ctx: Context, port: int = 8000):
     """Generate coverage report and use Python's built-in HTTP server to
     serve it locally."""
     ctx.run("inv check-coverage --fail-under=0")
-    ctx.run(f"python -m http.server {port} -d reports/coverage/html")
+    ctx.run(f"python -m http.server {port} -d .reports/coverage/html")
 
 
 @task
