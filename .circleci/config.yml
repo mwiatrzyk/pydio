@@ -80,8 +80,9 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
-      - run: poetry run inv qa
-      - run: poetry run inv deploy-prod
+      - run: uv build
+      - run: uv publish --dry-run
+      - run: uv publish
 
 workflows:
   test:
