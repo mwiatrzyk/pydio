@@ -1,3 +1,9 @@
+## 0.5.0-dev.1 (2026-09-04)
+
+### Fix
+
+- fix package publishing
+
 ## 0.5.0-dev (2026-09-04)
 
 ### Fix
