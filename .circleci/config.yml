@@ -70,6 +70,7 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - run: uv tool install --python 3.9 bumpify
+      - run: bumpify --dry-run bump
       - run: bumpify bump
       - push-to-git
   deploy:
