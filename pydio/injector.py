@@ -125,7 +125,7 @@ class Injector(IInjector):
             with self._lock:
                 provider = self._provider
                 awaitables = []
-                for child in self._child_injectors:
+                for child in list(self._child_injectors):
                     maybe_awaitable = child._do_close(exc_type, exc, tb)
                     if maybe_awaitable is not None:
                         awaitables.append(maybe_awaitable)
@@ -138,19 +138,29 @@ class Injector(IInjector):
                     except Exception as e:
                         if first_exc_raised is None:
                             first_exc_raised = e
-                if not provider.has_awaitables():
-                    self._provider = None
-                    if first_exc_raised is not None:
-                        raise first_exc_raised
-                else:
+                if provider.has_awaitables():
 
                     async def do_async_close(awaitables):
                         self._provider = None
+                        self._detach_from_parent()
                         await asyncio.gather(*awaitables)
                         if first_exc_raised is not None:
                             raise first_exc_raised
 
                     return do_async_close(awaitables)
+                self._provider = None
+            self._detach_from_parent()
+            if first_exc_raised is not None:
+                raise first_exc_raised
+
+    def _detach_from_parent(self):
+        # Called without holding own lock, so that closing a child and its
+        # parent concurrently from two threads cannot deadlock.
+        parent = self._parent
+        if parent is not None:
+            with parent._lock:  # pylint: disable=protected-access
+                if self in parent._child_injectors:  # pylint: disable=protected-access
+                    parent._child_injectors.remove(self)  # pylint: disable=protected-access
 
     def is_closed(self) -> bool:
         """Return True if this injector was closed or False otherwise."""
