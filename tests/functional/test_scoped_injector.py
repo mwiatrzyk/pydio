@@ -122,3 +122,55 @@ class TestScopedInjector:
         connection.close.expect_call().times(1)
         with satisfied(connection):
             injector.close()
+
+    def test_when_scoped_injector_is_closed_then_it_is_detached_from_parent(
+        self, injector
+    ):
+        for _ in range(3):
+            with injector.scoped('sc1') as sc1:
+                sc1.inject(IBar)
+        assert injector._child_injectors == []
+
+    def test_when_scoped_injector_is_closed_due_to_exception_then_it_is_detached_from_parent(
+        self, injector
+    ):
+        with pytest.raises(ValueError):
+            with injector.scoped('sc1') as sc1:
+                sc1.inject(IBar)
+                raise ValueError()
+        assert injector._child_injectors == []
+
+    def test_scoped_injector_is_attached_to_parent_until_closed(self, injector):
+        sc1 = injector.scoped('sc1')
+        assert injector._child_injectors == [sc1]
+        sc1.close()
+        assert injector._child_injectors == []
+
+    def test_when_parent_injector_is_closed_then_all_child_injectors_are_closed_and_detached(
+        self, injector
+    ):
+        children = [injector.scoped('sc1') for _ in range(3)]
+        connections = [Mock(f'connection{i}') for i in range(3)]
+        db = injector.inject('db')
+        for connection in connections:
+            db.connect.expect_call().will_once(Return(connection))
+        with satisfied(db):
+            for child, connection in zip(children, connections):
+                assert child.inject('connection') is connection
+
+        for connection in connections:
+            connection.close.expect_call().times(1)
+        with satisfied(*connections):
+            injector.close()
+        assert all(child.is_closed() for child in children)
+        assert injector._child_injectors == []
+
+    def test_when_nested_scoped_injector_is_closed_then_it_is_detached_from_its_own_parent(
+        self, injector
+    ):
+        with injector.scoped('sc2') as sc2:
+            with sc2.scoped('sc21') as sc21:
+                sc21.inject('spam')
+            assert sc2._child_injectors == []
+            assert injector._child_injectors == [sc2]
+        assert injector._child_injectors == []

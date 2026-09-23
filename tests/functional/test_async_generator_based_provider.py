@@ -112,3 +112,23 @@ async def test_properly_close_injector_when_exception_is_raised_in_teardown_phas
             mock.third.done.expect_call()
     assert str(excinfo.value) == 'an error'
     assert injector.is_closed()
+
+
+@pytest.mark.asyncio
+async def test_when_scoped_injector_is_closed_then_it_is_detached_from_parent(
+    mock
+):
+
+    async def make_scoped_obj():
+        yield mock.begin()
+        mock.end()
+
+    provider = Provider()
+    provider.register_func('scoped_obj', make_scoped_obj, scope='sc')
+    injector = Injector(provider)
+    for i in range(3):
+        mock.begin.expect_call().will_once(Return(i))
+        mock.end.expect_call()
+        async with injector.scoped('sc') as scoped:
+            assert await scoped.inject('scoped_obj') == i
+        assert injector._child_injectors == []
