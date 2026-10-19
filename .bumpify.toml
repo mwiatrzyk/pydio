@@ -3,7 +3,7 @@ type = "git"
 
 [semver]
 version = "0.0.1"
-bump_commit_message_template = "bump: {prev_version_str} -> {version_str}"
+bump_commit_message_template = "bump: {prev_version_str} -> {version_str} [skip ci]"
 version_tag_name_template = "v{version_str}"
 
 [[semver.bump_rules]]

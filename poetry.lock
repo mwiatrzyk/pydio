@@ -99,26 +99,6 @@ css = ["tinycss2 (>=1.1.0,<1.2)"]
 dev = ["Sphinx (==4.3.2)", "black (==22.3.0) ; implementation_name == \"cpython\"", "build (==0.8.0)", "flake8 (==4.0.1)", "hashin (==0.17.0)", "mypy (==0.961) ; implementation_name == \"cpython\"", "pip-tools (==6.6.2)", "pytest (==7.1.2)", "tox (==3.25.0)", "twine (==4.0.1)", "wheel (==0.37.1)"]
 
 [[package]]
-name = "bumpify"
-version = "0.5.1"
-description = "Semantic versioning automation tool for software projects"
-optional = false
-python-versions = "<4.0,>=3.9"
-groups = ["dev"]
-files = [
-    {file = "bumpify-0.5.1-py3-none-any.whl", hash = "sha256:ba2407886d1070d44131723cf3f19d075e908fdebb030f04c527cda40811a0f2"},
-    {file = "bumpify-0.5.1.tar.gz", hash = "sha256:0bf2a3811572fedeaa2c7cc30d907dfd0ed53a3f4f0f884ed9622126c3f44580"},
-]
-
-[package.dependencies]
-click = ">=8.1.7,<9.0.0"
-click-help-colors = ">=0.9.4,<0.10.0"
-colorama = ">=0.4.6,<0.5.0"
-modelity = ">=0.26.0,<0.27.0"
-pydio = ">=0.4.1,<0.5.0"
-tomlkit = ">=0.12.4,<0.13.0"
-
-[[package]]
 name = "certifi"
 version = "2022.9.24"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -222,53 +202,6 @@ files = [
 
 [package.extras]
 unicode-backport = ["unicodedata2"]
-
-[[package]]
-name = "click"
-version = "8.1.8"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.7"
-groups = ["dev"]
-markers = "python_version < \"3.11\""
-files = [
-    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
-    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
-name = "click"
-version = "8.5.0"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.10"
-groups = ["dev"]
-markers = "python_version >= \"3.11\""
-files = [
-    {file = "click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"},
-    {file = "click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34"},
-]
-
-[[package]]
-name = "click-help-colors"
-version = "0.9.4"
-description = "Colorization of help messages in Click"
-optional = false
-python-versions = "*"
-groups = ["dev"]
-files = [
-    {file = "click-help-colors-0.9.4.tar.gz", hash = "sha256:f4cabe52cf550299b8888f4f2ee4c5f359ac27e33bcfe4d61db47785a5cc936c"},
-    {file = "click_help_colors-0.9.4-py3-none-any.whl", hash = "sha256:b33c5803eeaeb084393b1ab5899dc5476c7196b87a18713045afe76f840b42db"},
-]
-
-[package.dependencies]
-click = ">=7.0,<9"
-
-[package.extras]
-dev = ["mypy", "pytest"]
 
 [[package]]
 name = "colorama"
@@ -841,21 +774,6 @@ files = [
     {file = "mockify-0.14.0-py3-none-any.whl", hash = "sha256:e112bd9b58cf64d17448d63ce144f06ba8ccbce9a0ede35b0dc7d0c24f6cddaf"},
     {file = "mockify-0.14.0.tar.gz", hash = "sha256:fb29101062bac981aebd0e571e37a1fac7e0796be47fe50e3a93fc879f90011d"},
 ]
-
-[[package]]
-name = "modelity"
-version = "0.26.0"
-description = "Data parsing and validation library for Python"
-optional = false
-python-versions = "<4,>=3.9"
-groups = ["dev"]
-files = [
-    {file = "modelity-0.26.0-py3-none-any.whl", hash = "sha256:b14ac50d6c13a867b84d88734a0446c53b3d21507b62657559626ce445249a72"},
-    {file = "modelity-0.26.0.tar.gz", hash = "sha256:757b37ec8370a18a21971cd35ed94b82c21fb46a357adcb01575db7924e013c7"},
-]
-
-[package.dependencies]
-typing-extensions = ">=4.12.2,<5.0.0"
 
 [[package]]
 name = "more-itertools"
@@ -1825,4 +1743,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4"
-content-hash = "0b2ba7c00cf9c75c9c818f7b8f751c8c5db1c7361fb3a6664414642e02d1a1d6"
+content-hash = "969527e639112cd0f20b0ba181e2d29388fba57e1f0559fb7c8ae5bfe02bc568"

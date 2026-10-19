@@ -70,7 +70,8 @@ jobs:
           ver_major: 3
           ver_minor: 9
       - run: poetry run inv adjust
-      - run: poetry run bumpify bump || circleci-agent step halt
+      - run: uv tool install bumpify
+      - run: bumpify bump || circleci-agent step halt
       - run: poetry run inv qa
       - push-to-git
   deploy:

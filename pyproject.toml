@@ -38,7 +38,6 @@ toml = "^0.10.2"
 tox = "^3.27.0"
 myst-parser = "^0.18.1"
 mockify = "^0.14.0"
-bumpify = "^0.5.1"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
