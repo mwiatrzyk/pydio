@@ -1,6 +1,6 @@
 [project]
 name = "PyDio"
-version = "0.5.1"
+version = "0.5.2"
 description = "Simple and functional dependency injection toolkit for Python"
 authors = [
     {name = "Maciej Wiatrzyk", email = "maciej.wiatrzyk@gmail.com"}
