@@ -1,21 +1,23 @@
-[tool.poetry]
+[project]
 name = "PyDio"
 version = "0.5.1"
 description = "Simple and functional dependency injection toolkit for Python"
 authors = [
-    "Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>"
+    {name = "Maciej Wiatrzyk", email = "maciej.wiatrzyk@gmail.com"}
 ]
 license = "MIT"
 readme = "README.md"
-documentation = "https://pydio.readthedocs.io"
-repository = "https://github.com/mwiatrzyk/pydio"
 keywords = ["dependency", "injection", "di", "framework", "toolkit", "tool", "library"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Homepage = "https://github.com/mwiatrzyk/pydio"
+Repository = "https://github.com/mwiatrzyk/pydio"
+Documentation = "https://pydio.readthedocs.io"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
