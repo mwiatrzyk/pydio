@@ -12,12 +12,12 @@ commands:
       - restore_cache:
           name: restore dependency cache
           keys:
-            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+            - poetry-v2-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
       - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: poetry install -q
       - save_cache:
           name: save dependency cache
-          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+          key: poetry-v2-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
           paths:
             - ~/.cache/pypoetry/
   configure-git:
