@@ -1,0 +1,27 @@
+[vcs]
+type = "git"
+
+[semver]
+version = "0.0.1"
+bump_commit_message_template = "bump: {prev_version_str} -> {version_str}"
+version_tag_name_template = "v{version_str}"
+
+[[semver.bump_rules]]
+branch = "master"
+when_breaking = "minor"
+when_feat = "minor"
+when_fix = "patch"
+
+[[semver.version_files]]
+path = "pyproject.toml"
+prefix = "version"
+encoding = "utf-8"
+
+[[semver.version_files]]
+path = "pydio/__init__.py"
+prefix = "__version__"
+encoding = "utf-8"
+
+[[semver.changelog_files]]
+path = "CHANGELOG.md"
+encoding = "utf-8"
