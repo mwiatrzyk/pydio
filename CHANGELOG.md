@@ -1,3 +1,13 @@
+## v1.0.0 (2026-10-19)
+
+### Feat
+
+- add support for Python 3.12 and 3.13
+
+### Fix
+
+- detach closed scoped injector from its parent
+
 ## v0.4.1 (2023-05-12)
 
 ### Fix
