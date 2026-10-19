@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PyDio"
-version = "0.5.0"
+version = "0.5.1"
 description = "Simple and functional dependency injection toolkit for Python"
 authors = [
     "Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>"

@@ -1,3 +1,9 @@
+## 0.5.1 (2026-10-19)
+
+### Fix
+
+- use `bumpify` but as a separately installed tool
+
 ## 0.5.0 (2026-10-19)
 
 ### Fix
