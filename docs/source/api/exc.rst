@@ -1,7 +1,7 @@
 .. ----------------------------------------------------------------------------
 .. docs/source/api/exc.rst
 ..
-.. Copyright (C) 2021 - 2026 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+.. Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
 .. This file is part of PyDio library documentation
 .. and is released under the terms of the MIT license:

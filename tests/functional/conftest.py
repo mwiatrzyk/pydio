@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # tests/functional/conftest.py
 #
-# Copyright (C) 2021 - 2026 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
+# Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
 # This file is part of PyDio library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
