@@ -3,7 +3,7 @@
 ..
 .. Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
-.. This file is part of PyDio library documentation
+.. This file is part of PyDIO library documentation
 .. and is released under the terms of the MIT license:
 .. http://opensource.org/licenses/mit-license.php.
 ..
@@ -324,7 +324,7 @@ Introducing providers
 
 As you can see, when implementing additional storages, our business logic was
 not affected at all, however configuration part of our application was
-getting more complicated. Now let's do some refactoring with PyDio.
+getting more complicated. Now let's do some refactoring with PyDIO.
 
 First, we need to create **providers**. Providers are used to wrap
 user-defined factory functions and give it a key that can be referenced
@@ -354,7 +354,7 @@ to anything you like. The only requirement is to use same name later.
 Introducing injectors
 ---------------------
 
-Now let me introduce second element of PyDio library - the **injector**.
+Now let me introduce second element of PyDIO library - the **injector**.
 Here's our TODO application from earlier example refactored to use injector:
 
 .. testcode::
@@ -562,7 +562,7 @@ have to call it (the constructor) again for every method call - otherwise we
 would start sharing our objects between API calls, and that may not be
 expected behavior.
 
-To solve this issue, PyDio provides **scopes**. Scopes are implemented by
+To solve this issue, PyDIO provides **scopes**. Scopes are implemented by
 creating new injector from given one, and giving the new one access to
 user-defined scope, plus its ancestors. Such created injectors can have
 shorter lifetime than the root one.
@@ -685,7 +685,7 @@ Using generator-based object factories
 We are still missing one important thing in our application - database
 sessions. Of course, that is not needed for a in-memory storage, but
 definitely will have to be used for SQL-based storage. And the session scope
-should be limited only to actions. How to do that using PyDio? Here's a
+should be limited only to actions. How to do that using PyDIO? Here's a
 solution:
 
 .. testcode::

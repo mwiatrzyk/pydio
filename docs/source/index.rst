@@ -3,38 +3,38 @@
 ..
 .. Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 ..
-.. This file is part of PyDio library documentation
+.. This file is part of PyDIO library documentation
 .. and is released under the terms of the MIT license:
 .. http://opensource.org/licenses/mit-license.php.
 ..
 .. See LICENSE.txt for details.
 .. ----------------------------------------------------------------------------
 
-Welcome to PyDio's documentation!
+Welcome to PyDIO's documentation!
 =================================
 
-.. image:: https://img.shields.io/pypi/v/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/l/PyDio
-    :target: https://pypi.org/project/PyDio/
-.. image:: https://img.shields.io/pypi/dm/PyDio
-    :target: https://pypi.org/project/PyDio/
+.. image:: https://img.shields.io/pypi/v/PyDIO
+    :target: https://pypi.org/project/PyDIO/
+.. image:: https://img.shields.io/pypi/l/PyDIO
+    :target: https://pypi.org/project/PyDIO/
+.. image:: https://img.shields.io/pypi/dm/PyDIO
+    :target: https://pypi.org/project/PyDIO/
 .. image:: https://codecov.io/gh/mwiatrzyk/pydio/branch/master/graph/badge.svg?token=Y6DJDSOR6M
     :target: https://codecov.io/gh/mwiatrzyk/pydio
 
-About PyDio
+About PyDIO
 -----------
 
-PyDio is a dependency injection library for Python.
+PyDIO is a dependency injection library for Python.
 
 It aims to be simple, yet still powerful, allowing you to feed dependencies
-inside your application in a flexible way. PyDio design is based on simple
+inside your application in a flexible way. PyDIO design is based on simple
 assumption, that dependency injection can be achieved using simple
 **key-to-function** map, where **key** specifies **type of object** you want
 to inject and **function** is a **factory** function that creates
 **instances** of that type.
 
-In PyDio, this is implemented using **providers** and **injectors**. You use
+In PyDIO, this is implemented using **providers** and **injectors**. You use
 providers to configure your **key-to-function** mapping, and then you use
 injectors to perform a **lookup** of a specific key and creation of the final
 object.

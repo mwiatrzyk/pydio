@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
-# This file is part of PyDio library and is released under the terms of the
+# This file is part of PyDIO library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
 #
 # See LICENSE.txt for details.
@@ -93,7 +93,7 @@ class Provider(IUnboundFactoryRegistry):
         objects.
 
         If your application has some global configuration data you want to
-        inject using PyDio - that's the method you should use.
+        inject using PyDIO - that's the method you should use.
         """
         with self._lock:
             self._check_key_availability(key, env)

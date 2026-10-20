@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
-# This file is part of PyDio library and is released under the terms of the
+# This file is part of PyDIO library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
 #
 # See LICENSE.txt for details.
@@ -173,7 +173,7 @@ def check(args):
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description="A tool for updating tag info in PyDio")
+    parser = argparse.ArgumentParser(description="A tool for updating tag info in PyDIO")
     parser.add_argument("tag_or_version", metavar="TAG_OR_VERSION", help="tag name or version string")
     parser.add_argument(
         "-c",

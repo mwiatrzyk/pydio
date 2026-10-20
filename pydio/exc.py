@@ -3,18 +3,18 @@
 #
 # Copyright (C) 2021 - 2025 Maciej Wiatrzyk <maciej.wiatrzyk@gmail.com>
 #
-# This file is part of PyDio library and is released under the terms of the
+# This file is part of PyDIO library and is released under the terms of the
 # MIT license: http://opensource.org/licenses/mit-license.php.
 #
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
-"""Base exception classes for PyDio."""
+"""Base exception classes for PyDIO."""
 
 import abc
 
 
 class Base(Exception, abc.ABC):
-    """Common base class for all PyDio exceptions.
+    """Common base class for all PyDIO exceptions.
 
     You can use this class to catch all exceptions that this library may
     raise.
