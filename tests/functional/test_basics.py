@@ -26,13 +26,12 @@ def make_bar():
     return Bar()
 
 
-@provider.provides('baz')
+@provider.provides("baz")
 def make_baz(injector: Injector):
     return Baz(foo=injector.inject(IFoo), bar=injector.inject(IBar))
 
 
 class TestBasics:
-
     @pytest.fixture
     def injector(self):
         return Injector(provider)
@@ -43,14 +42,12 @@ class TestBasics:
     def test_injector_should_always_inject_same_instance(self, injector):
         assert injector.inject(IFoo) is injector.inject(IFoo)
 
-    def test_injector_should_raise_exception_if_invalid_key_was_given(
-        self, injector
-    ):
+    def test_injector_should_raise_exception_if_invalid_key_was_given(self, injector):
         with pytest.raises(Injector.NoProviderFoundError):
-            injector.inject('dummy')
+            injector.inject("dummy")
 
     def test_injector_can_perform_nested_injections_if_needed(self, injector):
-        baz = injector.inject('baz')
+        baz = injector.inject("baz")
         assert isinstance(baz, Baz)
         assert isinstance(baz.foo, Foo)
         assert isinstance(baz.bar, Bar)

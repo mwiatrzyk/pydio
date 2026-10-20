@@ -4,24 +4,25 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/pydio)
 [![codecov](https://codecov.io/gh/mwiatrzyk/pydio/branch/master/graph/badge.svg?token=Y6DJDSOR6M)](https://codecov.io/gh/mwiatrzyk/pydio)
 
-# PyDio
+# PyDIO
 
-Simple and functional dependency injection toolkit for Python.
+Lightweight and functional dependency injection library for Python.
 
 ## Name
 
-**PyDio** (pronounced: *"PAI-dee-o"*) stands for **Python Dependency Injection tOolkit**.
+**PyDIO** (stylized as *PyDIO*, installable as `pydio`, pronounced
+*"pie-dee-o"*) stands for **Python dependency injection library**.
 
 ## About
 
-PyDio aims to be simple, yet still powerful, allowing you to feed dependencies
-inside your application in a flexible way. PyDio design is based on simple
+PyDIO aims to be simple, yet still powerful, allowing you to feed dependencies
+inside your application in a flexible way. PyDIO design is based on simple
 assumption that dependency injection can be achieved using a straightforward
 **key-to-function** mapping, where **key** specifies **type of object** you
 want to inject and **function** is a **factory** function that creates
 **instances** of that type.
 
-In PyDio, this is implemented using **providers** and **injectors**. You use
+In PyDIO, this is implemented using **providers** and **injectors**. You use
 providers to configure your **key-to-function** mapping, and then you use
 injectors to perform a **lookup** of a specific key and creation of the final
 object.
@@ -71,37 +72,37 @@ Hello, world!
 
 ## Installation
 
-You can install PyDio using one of following methods:
+You can install PyDIO using one of following methods:
 
 1) From PyPI (for stable releases):
 
     ```shell
-    $ pip install PyDio
+    $ pip install PyDIO
     ```
 
 2) From test PyPI (for stable and development releases):
 
     ```shell
-    $ pip install -i https://test.pypi.org/simple/ PyDio
+    $ pip install -i https://test.pypi.org/simple/ PyDIO
     ```
 
 3) Directly from source code repository (for all releases):
 
     ```shell
-    $ pip install git+https://gitlab.com/zef1r/PyDio.git@[branch-or-tag]
+    $ pip install git+https://gitlab.com/zef1r/PyDIO.git@[branch-or-tag]
     ```
 
 ## Documentation
 
 You have two options available:
 
-1) Visit [PyDio's ReadTheDocs](https://pydio.readthedocs.io/en/latest/) site.
+1) Visit [PyDIO's ReadTheDocs](https://pydio.readthedocs.io/en/latest/) site.
 
 2) Take a tour around [functional tests](https://github.com/mwiatrzyk/pydio/tree/master/tests/functional).
 
 ## Disclaimer
 
-**PyDio** is an independent open-source project in the Python ecosystem. It
+**PyDIO** is an independent open-source project in the Python ecosystem. It
 is not affiliated with, sponsored by, or endorsed by any company, organization,
 or product of the same or similar name. Any similarity in names is purely
 coincidental and does not imply any association.

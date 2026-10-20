@@ -8,18 +8,18 @@ commands:
       ver_minor:
         type: integer
     steps:
-      - run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
+      #- run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
       - restore_cache:
           name: restore dependency cache
           keys:
-            - poetry-v2-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
-      - run: poetry env use <<parameters.ver_major>>.<<parameters.ver_minor>>
-      - run: poetry install -q
+            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
+      - run: uv python pin <<parameters.ver_major>>.<<parameters.ver_minor>>
+      - run: uv sync
       - save_cache:
           name: save dependency cache
-          key: poetry-v2-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "poetry.lock" }}
+          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
           paths:
-            - ~/.cache/pypoetry/
+            - .venv
   configure-git:
     steps:
       - run: git config user.name "CircleCI"
@@ -49,7 +49,7 @@ jobs:
       - install-deps:
           ver_major: <<parameters.ver_major>>
           ver_minor: <<parameters.ver_minor>>
-      - run: poetry run pytest
+      - run: uv run inv check
   publish-coverage:
     docker:
       - image: cimg/python:3.9
@@ -69,10 +69,9 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
-      - run: poetry run inv adjust
-      - run: uv tool install bumpify
-      - run: bumpify bump || circleci-agent step halt
-      - run: poetry run inv qa
+      - run: uv tool install --python 3.9 bumpify
+      - run: bumpify --dry-run bump
+      - run: bumpify bump
       - push-to-git
   deploy:
     docker:
@@ -82,8 +81,9 @@ jobs:
       - install-deps:
           ver_major: 3
           ver_minor: 9
-      - run: poetry run inv qa
-      - run: poetry run inv deploy-prod
+      - run: uv build
+      - run: uv publish --token $PYPI_TOKEN --dry-run
+      - run: uv publish --token $PYPI_TOKEN
 
 workflows:
   test:
@@ -108,6 +108,10 @@ workflows:
           name: "test-py313"
           ver_major: 3
           ver_minor: 13
+      - test:
+          name: "test-py314"
+          ver_major: 3
+          ver_minor: 14
       - publish-coverage:
           filters:
             branches:
@@ -119,12 +123,22 @@ workflows:
             - test-py311
             - test-py312
             - test-py313
+            - test-py314
           filters:
             branches:
-              only: master
+              only: development  #XXX: Change to `master` before merge
+            tags:
+              ignore: /.*/
       - deploy:
+          requires:
+            - test-py39
+            - test-py310
+            - test-py311
+            - test-py312
+            - test-py313
+            - test-py314
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /^v\d+\.\d+\.\d+$/
+              only: /^v\d+\.\d+\.\d+.*$/

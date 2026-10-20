@@ -17,11 +17,10 @@ from pydio import _factories as factories
 
 
 class TestGeneratorFactory:
-
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.GeneratorFactory(self.make_connection)
-        self.database = Mock('database')
+        self.database = Mock("database")
 
     def make_connection(self):
         connection = self.database.connect()
@@ -29,14 +28,14 @@ class TestGeneratorFactory:
         connection.close()
 
     def test_get_instance_always_returns_same_object(self):
-        connection = Mock('connection')
+        connection = Mock("connection")
         self.database.connect.expect_call().will_once(Return(connection))
         with satisfied(self.database):
             assert self.uut.get_instance() is connection
             assert self.uut.get_instance() is connection
 
     def test_closing_generator_factory_invokes_statement_after_yield(self):
-        connection = Mock('connection')
+        connection = Mock("connection")
         self.database.connect.expect_call().will_once(Return(connection))
         with satisfied(self.database):
             assert self.uut.get_instance() is connection
@@ -50,11 +49,10 @@ class TestGeneratorFactory:
 
 
 class TestAsyncGeneratorFactory:
-
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.AsyncGeneratorFactory(self.make_connection)
-        self.database = Mock('database')
+        self.database = Mock("database")
 
     async def make_connection(self):
         connection = self.database.connect()
@@ -63,17 +61,15 @@ class TestAsyncGeneratorFactory:
 
     @pytest.mark.asyncio
     async def test_get_instance_always_returns_same_object(self):
-        connection = Mock('connection')
+        connection = Mock("connection")
         self.database.connect.expect_call().will_once(Return(connection))
         with satisfied(self.database):
             assert await self.uut.get_instance() is connection
             assert await self.uut.get_instance() is connection
 
     @pytest.mark.asyncio
-    async def test_closing_generator_factory_invokes_statement_after_yield(
-        self
-    ):
-        connection = Mock('connection')
+    async def test_closing_generator_factory_invokes_statement_after_yield(self):
+        connection = Mock("connection")
         self.database.connect.expect_call().will_once(Return(connection))
         with satisfied(self.database):
             assert await self.uut.get_instance() is connection
@@ -88,7 +84,6 @@ class TestAsyncGeneratorFactory:
 
 
 class TestCoroutineFactory:
-
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.CoroutineFactory(self.make_dummy_object)
@@ -110,7 +105,6 @@ class TestCoroutineFactory:
 
 
 class TestFunctionFactory:
-
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.FunctionFactory(self.make_dummy_object)
@@ -130,7 +124,6 @@ class TestFunctionFactory:
 
 
 class TestInstanceFactory:
-
     @pytest.fixture(autouse=True)
     def setup(self):
         self.uut = factories.InstanceFactory([42])

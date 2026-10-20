@@ -91,6 +91,6 @@ User's Guide
 
     installation
     quickstart
-    api
+    api/index
     changelog
     license

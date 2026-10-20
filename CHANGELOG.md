@@ -1,18 +1,26 @@
-## 0.5.1 (2026-10-19)
+## 0.5.0-dev.1 (2026-09-04)
 
 ### Fix
 
-- use `bumpify` but as a separately installed tool
+- fix package publishing
 
-## 0.5.0 (2026-10-19)
+## 0.5.0-dev (2026-09-04)
 
 ### Fix
 
-- detach closed scoped injector from its parent
+- when `OutOfScopeError` is raised from a child provider, collect it and raise summarized error
+- make tests pass on Python 3.13
 
 ### Feat
 
 - add support for Python 3.12 and 3.13
+- add a new v1 `provides` decorator
+- create a v1 `Injector` implementation with tests
+- add v1 `AsyncInjector` implementation with tests
+- add async recursive lock implementation for a default asyncio backend
+- add `inject_annotated` and `async_inject_annotated` helpers
+- normalize exception handling
+- add support for Python 3.14
 
 ## 0.4.1 (2023-05-12)
 
@@ -75,3 +83,8 @@
 
 Initial release.
 
+## 0.1.0rc1 (2021-02-04)
+
+### Feat
+
+- first released tag

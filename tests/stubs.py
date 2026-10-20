@@ -9,7 +9,6 @@
 # See LICENSE.txt for details.
 # ---------------------------------------------------------------------------
 class IObject:
-
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
