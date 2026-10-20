@@ -1,3 +1,9 @@
+## 0.5.1 (2026-10-20)
+
+### Fix
+
+- add missing config files to unlock documentation building by ReadTheDocs
+
 ## 0.5.0 (2026-10-20)
 
 ### Fix
