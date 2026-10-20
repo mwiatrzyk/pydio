@@ -8,16 +8,15 @@ commands:
       ver_minor:
         type: integer
     steps:
-      #- run: pyenv local <<parameters.ver_major>>.<<parameters.ver_minor>>
       - restore_cache:
           name: restore dependency cache
           keys:
-            - poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
+            - py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
       - run: uv python pin <<parameters.ver_major>>.<<parameters.ver_minor>>
       - run: uv sync
       - save_cache:
           name: save dependency cache
-          key: poetry-py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
+          key: py<<parameters.ver_major>><<parameters.ver_minor>>-{{ checksum "uv.lock" }}
           paths:
             - .venv
   configure-git:
@@ -30,7 +29,7 @@ commands:
       - run: git push --tags
   publish-coverage:
     steps:
-      - run: poetry run inv qa-cov -f0
+      - run: uv run inv check-coverage -f0
       - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
       - run: chmod +x codecov
       - run: ./codecov
