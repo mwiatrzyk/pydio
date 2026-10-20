@@ -103,24 +103,22 @@ class Injector(IInjector):
             parent_env = self._env
             if parent_env is not None and parent_env != env:
                 raise ValueError(
-                    "scoped() got an invalid value for parameter 'env': expected {!r} or None, got {!r}"
-                    .format(parent_env, env)
+                    "scoped() got an invalid value for parameter 'env': expected {!r} or None, got {!r}".format(
+                        parent_env, env
+                    )
                 )
         with self._lock:
             injector = self.__class__(self._provider, env=env or self._env)
             self._child_injectors.append(injector)
             injector._parent = self  # pylint: disable=protected-access
-            injector._scope = scope  # pylint: disable=protected-access
+            injector._scope = scope  # type: ignore
             return injector
 
     def close(self) -> Optional[Awaitable[None]]:
         """See :meth:`pydio.base.IInjector.close`."""
         return self._do_close()
 
-    def _do_close(self,
-                  exc_type=None,
-                  exc=None,
-                  tb=None) -> Optional[Awaitable[None]]:
+    def _do_close(self, exc_type=None, exc=None, tb=None) -> Optional[Awaitable[None]]:
         if self._provider is not None:
             with self._lock:
                 provider = self._provider
@@ -148,10 +146,11 @@ class Injector(IInjector):
                             raise first_exc_raised
 
                     return do_async_close(awaitables)
-                self._provider = None
+                self._provider = None  # type: ignore
             self._detach_from_parent()
             if first_exc_raised is not None:
                 raise first_exc_raised
+        return None
 
     def _detach_from_parent(self):
         # Called without holding own lock, so that closing a child and its
@@ -175,6 +174,7 @@ class Injector(IInjector):
         :param env:
             Searched environment
         """
+
         message_template = "No provider found for: key={self.key!r}, env={self.env!r}"
 
         def __init__(self, key, env):
@@ -182,11 +182,11 @@ class Injector(IInjector):
 
         @property
         def key(self) -> Hashable:
-            return self.params['key']
+            return self.params["key"]
 
         @property
         def env(self) -> Hashable:
-            return self.params['env']
+            return self.params["env"]
 
     class OutOfScopeError(exc.InjectorError):
         """Raised when there was attempt to create object that was registered
@@ -201,27 +201,28 @@ class Injector(IInjector):
         :param required_scope:
             Required scope
         """
-        message_template =\
-            "Cannot inject {self.key!r} due to scope mismatch: "\
+
+        message_template = (
+            "Cannot inject {self.key!r} due to scope mismatch: "
             "{self.required_scope!r} (required) != {self.scope!r} (owned)"
+        )
 
         def __init__(self, key, scope, required_scope):
-            super().__init__(
-                key=key, scope=scope, required_scope=required_scope
-            )
+            super().__init__(key=key, scope=scope, required_scope=required_scope)
 
         @property
         def key(self) -> Hashable:
-            return self.params['key']
+            return self.params["key"]
 
         @property
         def scope(self) -> Hashable:
-            return self.params['scope']
+            return self.params["scope"]
 
         @property
         def required_scope(self) -> Hashable:
-            return self.params['required_scope']
+            return self.params["required_scope"]
 
     class AlreadyClosedError(exc.InjectorError):
         """Raised when operation on a closed injector was performed."""
+
         message_template = "This injector was already closed"
