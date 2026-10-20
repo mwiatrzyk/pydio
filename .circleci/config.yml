@@ -125,7 +125,7 @@ workflows:
             - test-py314
           filters:
             branches:
-              only: development  #XXX: Change to `master` before merge
+              only: master
             tags:
               ignore: /.*/
       - deploy:
