@@ -1,3 +1,10 @@
+## 0.5.3 (2026-10-21)
+
+### Fix
+
+- add supported Python versions to pyproject.toml classifiers
+- add missing 'typing-extensions' dependency for ReadTheDocs
+
 ## 0.5.2 (2026-10-20)
 
 ### Fix
